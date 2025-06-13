@@ -174,6 +174,20 @@ export class CodegenAPIClient {
     );
   }
 
+  async getCurrentUser(
+    organizationId: number,
+    userId: number
+  ): Promise<UserResponse> {
+    return this.makeRequest<UserResponse>(
+      `/v1/organizations/${organizationId}/users/${userId}`
+    );
+  }
+
+  // Get current user info (if there's a /me endpoint)
+  async getMe(): Promise<UserResponse> {
+    return this.makeRequest<UserResponse>("/v1/me");
+  }
+
   // Validation Method
   async validateConnection(): Promise<boolean> {
     try {

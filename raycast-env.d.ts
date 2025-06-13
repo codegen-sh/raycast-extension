@@ -12,6 +12,8 @@ type ExtensionPreferences = {
   "apiToken": string,
   /** Default Organization ID - Default organization ID to use (optional) */
   "defaultOrganization"?: string,
+  /** User ID - Your user ID for personalized features (optional) */
+  "userId"?: string,
   /** API Base URL - Custom API base URL (leave empty for default) */
   "apiBaseUrl": string
 }

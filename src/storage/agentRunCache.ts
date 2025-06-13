@@ -227,6 +227,7 @@ export class AgentRunCache {
    * Add an agent run to the tracking list
    */
   async addToTracking(organizationId: number, agentRun: AgentRunResponse): Promise<void> {
+    // Add to tracking
     const trackedRun: TrackedAgentRun = {
       id: agentRun.id,
       organizationId,
@@ -246,6 +247,9 @@ export class AgentRunCache {
     const key = this.getTrackedRunKey(organizationId, agentRun.id);
     this.cache.set(key, JSON.stringify(entry));
     await this.addKeyToTracking(key);
+    
+    // Also add to main agent runs cache
+    await this.updateAgentRun(organizationId, agentRun);
     
     console.log(`Added agent run ${agentRun.id} to tracking for org ${organizationId}`);
   }
@@ -277,18 +281,19 @@ export class AgentRunCache {
    * Get all organizations that have tracked agent runs
    */
   async getTrackedOrganizations(): Promise<number[]> {
-    const prefix = `${CACHE_KEYS.TRACKED_RUNS}-org-`;
-    const keys = await this.getAllKeysWithPrefix(prefix);
-    const orgIds = new Set<number>();
-
-    for (const key of keys) {
-      const match = key.match(/tracked-runs-org-(\d+)-/);
-      if (match) {
-        orgIds.add(parseInt(match[1], 10));
+    // Get all organization tracking keys
+    const orgTrackingKey = "cache-keys-tracked-organizations";
+    const stored = await LocalStorage.getItem<string>(orgTrackingKey);
+    
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch (error) {
+        console.error("Error parsing tracked organizations:", error);
       }
     }
-
-    return Array.from(orgIds);
+    
+    return [];
   }
 
   /**
@@ -303,22 +308,10 @@ export class AgentRunCache {
     const apiClient = getAPIClient();
     const statusChanges: AgentRunStatusChange[] = [];
 
-    // Fetch current status for all tracked runs
-    try {
-      const currentRuns = await apiClient.getAgentRuns(organizationId, {
-        page: 1,
-        size: 100, // Adjust based on typical number of tracked runs
-      });
-
-      // Create a map of current runs by ID for quick lookup
-      const currentRunsMap = new Map<number, AgentRunResponse>();
-      for (const run of currentRuns.items) {
-        currentRunsMap.set(run.id, run);
-      }
-
-      // Check each tracked run for status changes
-      for (const trackedRun of trackedRuns) {
-        const currentRun = currentRunsMap.get(trackedRun.id);
+    // Check each tracked run for status changes
+    for (const trackedRun of trackedRuns) {
+      try {
+        const currentRun = await apiClient.getAgentRun(organizationId, trackedRun.id);
         if (currentRun && currentRun.status !== trackedRun.lastKnownStatus) {
           // Status has changed!
           const change: AgentRunStatusChange = {
@@ -335,10 +328,10 @@ export class AgentRunCache {
           // Update the tracked run with the new status
           await this.updateTrackedRunStatus(organizationId, trackedRun.id, currentRun.status);
         }
+      } catch (error) {
+        console.error(`Error checking status for run ${trackedRun.id}:`, error);
+        // Continue with other runs even if one fails
       }
-    } catch (error) {
-      console.error(`Error checking status changes for org ${organizationId}:`, error);
-      throw error;
     }
 
     return statusChanges;
@@ -426,7 +419,17 @@ export class AgentRunCache {
    * Add a key to the tracking list (for getAllKeysWithPrefix)
    */
   private async addKeyToTracking(key: string): Promise<void> {
-    const prefix = key.substring(0, key.lastIndexOf('-'));
+    // Extract the organization ID from the key
+    const match = key.match(/tracked-runs-org-(\d+)-/);
+    if (!match) {
+      console.error(`Invalid key format for tracking: ${key}`);
+      return;
+    }
+
+    const orgId = parseInt(match[1], 10);
+    
+    // Track the run key
+    const prefix = `tracked-runs-org-${orgId}-`;
     const trackingKey = `cache-keys-${prefix}`;
     const stored = await LocalStorage.getItem<string>(trackingKey);
     
@@ -442,6 +445,26 @@ export class AgentRunCache {
     if (!keys.includes(key)) {
       keys.push(key);
       await LocalStorage.setItem(trackingKey, JSON.stringify(keys));
+      console.log(`Added key ${key} to tracking for org ${orgId}`);
+    }
+
+    // Track the organization
+    const orgTrackingKey = "cache-keys-tracked-organizations";
+    const orgStored = await LocalStorage.getItem<string>(orgTrackingKey);
+    
+    let orgIds: number[] = [];
+    if (orgStored) {
+      try {
+        orgIds = JSON.parse(orgStored);
+      } catch (error) {
+        console.error("Error parsing tracked organizations:", error);
+      }
+    }
+    
+    if (!orgIds.includes(orgId)) {
+      orgIds.push(orgId);
+      await LocalStorage.setItem(orgTrackingKey, JSON.stringify(orgIds));
+      console.log(`Added organization ${orgId} to tracking`);
     }
   }
 

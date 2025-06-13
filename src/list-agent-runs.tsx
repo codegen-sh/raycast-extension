@@ -9,6 +9,7 @@ import {
   Toast,
   confirmAlert,
   Alert,
+  Clipboard,
 } from "@raycast/api";
 import { useCachedAgentRuns } from "./hooks/useCachedAgentRuns";
 import { getAPIClient } from "./api/client";
@@ -49,7 +50,7 @@ export default function ListAgentRuns() {
       case AgentRunStatus.ACTIVE:
         return { icon: Icon.Clock, color: Color.Blue };
       case AgentRunStatus.COMPLETE:
-        return { icon: Icon.CheckCircle, color: Color.Green };
+        return { icon: Icon.CheckRosette, color: Color.Green };
       case AgentRunStatus.ERROR:
         return { icon: Icon.XMarkCircle, color: Color.Red };
       case AgentRunStatus.CANCELLED:
@@ -142,6 +143,108 @@ export default function ListAgentRuns() {
       await showToast({
         style: Toast.Style.Failure,
         title: "Failed to Resume Agent Run",
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  };
+
+  // Add an agent run to monitor by ID or URL
+  const addAgentRunToMonitor = async () => {
+    if (!organizationId) return;
+
+    try {
+      // Check clipboard for potential agent run ID or URL
+      const clipboardText = await Clipboard.readText();
+      let suggestedInput = "";
+      
+      if (clipboardText) {
+        // Try to extract agent run ID from clipboard if it looks like a URL or ID
+        const urlMatch = clipboardText.match(/codegen\.com\/agent\/trace\/(\d+)/);
+        if (urlMatch) {
+          suggestedInput = urlMatch[1]; // Extract just the ID
+        } else if (/^\d+$/.test(clipboardText.trim())) {
+          suggestedInput = clipboardText.trim(); // Use the number directly
+        }
+      }
+
+      // Show instructions based on whether we found something useful in clipboard
+      const instructions = suggestedInput 
+        ? `Found agent run ID ${suggestedInput} in clipboard. Press Enter to add it, or replace with a different ID/URL.`
+        : "Copy an agent run ID or Codegen URL to your clipboard first, then try again.";
+
+      await showToast({
+        style: suggestedInput ? Toast.Style.Success : Toast.Style.Failure,
+        title: suggestedInput ? `Add Agent Run #${suggestedInput}?` : "Copy Agent Run ID First",
+        message: instructions,
+      });
+
+      if (!suggestedInput) return;
+
+      // Parse the agent run ID
+      const agentRunId = parseInt(suggestedInput, 10);
+
+      await showToast({
+        style: Toast.Style.Animated,
+        title: "Adding Agent Run",
+        message: `Fetching details for agent run #${agentRunId}...`,
+      });
+
+      // Fetch the agent run from the API
+      const agentRun = await apiClient.getAgentRun(organizationId, agentRunId);
+      
+      // Add to cache and tracking
+      await cache.updateAgentRun(organizationId, agentRun);
+      await cache.addToTracking(organizationId, agentRun);
+
+      await showToast({
+        style: Toast.Style.Success,
+        title: "Agent Run Added",
+        message: `Now monitoring agent run #${agentRunId} - you'll get notifications for status changes`,
+      });
+
+      // Refresh to show the new agent run
+      await refresh();
+
+    } catch (error) {
+      await showToast({
+        style: Toast.Style.Failure,
+        title: "Failed to Add Agent Run",
+        message: error instanceof Error ? error.message : "Could not fetch or add the agent run",
+      });
+    }
+  };
+
+  // Delete an agent run
+  const deleteAgentRun = async (agentRunId: number) => {
+    if (!organizationId) return;
+
+    const confirmed = await confirmAlert({
+      title: "Delete Agent Run",
+      message: `Are you sure you want to delete agent run #${agentRunId}? This will remove it from your local cache.`,
+      primaryAction: {
+        title: "Delete",
+        style: Alert.ActionStyle.Destructive,
+      },
+    });
+
+    if (!confirmed) return;
+
+    try {
+      // Remove from cache
+      await cache.removeAgentRun(organizationId, agentRunId);
+      
+      await showToast({
+        style: Toast.Style.Success,
+        title: "Agent Run Deleted",
+        message: `Agent run #${agentRunId} has been removed`,
+      });
+
+      // Refresh to update the list
+      await refresh();
+    } catch (error) {
+      await showToast({
+        style: Toast.Style.Failure,
+        title: "Failed to Delete Agent Run",
         message: error instanceof Error ? error.message : "Unknown error",
       });
     }
@@ -240,6 +343,12 @@ export default function ListAgentRuns() {
           }
           actions={
             <ActionPanel>
+              <Action
+                title="Add Agent Run to Monitor"
+                icon={Icon.Binoculars}
+                onAction={addAgentRunToMonitor}
+                shortcut={{ modifiers: ["cmd"], key: "m" }}
+              />
               <Action.Push
                 title="Create Agent Run"
                 icon={Icon.Plus}
@@ -270,11 +379,16 @@ export default function ListAgentRuns() {
               icon={{ source: statusDisplay.icon, tintColor: statusDisplay.color }}
               accessories={[
                 { text: run.status },
-                getSyncStatusAccessory(),
-              ].filter(Boolean)}
+              ]}
               actions={
                 <ActionPanel>
                   <ActionPanel.Section>
+                    <Action
+                      title="Add Agent Run to Monitor"
+                      icon={Icon.Binoculars}
+                      onAction={addAgentRunToMonitor}
+                      shortcut={{ modifiers: ["cmd"], key: "m" }}
+                    />
                     <Action.OpenInBrowser
                       title="Open in Browser"
                       url={run.web_url}
@@ -321,6 +435,13 @@ export default function ListAgentRuns() {
                         onAction={handleClearFilters}
                       />
                     )}
+                    <Action
+                      title="Delete Agent Run"
+                      icon={Icon.Trash}
+                      style={Action.Style.Destructive}
+                      onAction={() => deleteAgentRun(run.id)}
+                      shortcut={{ modifiers: ["cmd", "shift"], key: "delete" }}
+                    />
                   </ActionPanel.Section>
                 </ActionPanel>
               }
