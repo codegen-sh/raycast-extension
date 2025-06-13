@@ -1,3 +1,10 @@
+// Load environment variables first
+try {
+  require('dotenv').config();
+} catch (error) {
+  console.log("dotenv loading error:", error);
+}
+
 import { useState, useEffect } from "react";
 import {
   List,

@@ -15,7 +15,7 @@ type ExtensionPreferences = {
   /** User ID - Your user ID for personalized features (optional) */
   "userId"?: string,
   /** API Base URL - Custom API base URL (leave empty for default) */
-  "apiBaseUrl": string
+  "apiBaseUrl"?: string
 }
 
 /** Preferences accessible in all the extension's commands */

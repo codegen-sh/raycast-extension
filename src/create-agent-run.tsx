@@ -19,6 +19,7 @@ import { validateCredentials, hasCredentials, getCredentials } from "./utils/cre
 import { OrganizationResponse } from "./api/types";
 import { useCachedAgentRuns } from "./hooks/useCachedAgentRuns";
 import { getBackgroundMonitoringService } from "./utils/backgroundMonitoring";
+import { useCurrentUser } from "./hooks/useCurrentUser";
 
 interface FormValues {
   prompt: string;
@@ -44,6 +45,18 @@ export default function CreateAgentRun() {
   const apiClient = getAPIClient();
   const cache = getAgentRunCache();
   const backgroundMonitoring = getBackgroundMonitoringService();
+  const { userInfo } = useCurrentUser();
+
+  // Create welcome message using full name or GitHub username
+  const getWelcomeMessage = () => {
+    if (!userInfo) return "Welcome! 👋";
+    
+    const name = userInfo.full_name || 
+                 (userInfo.github_username ? userInfo.github_username : null) ||
+                 "there";
+    
+    return `Welcome, ${name}! 👋`;
+  };
 
   // Validate credentials and load organizations on mount
   useEffect(() => {
@@ -55,73 +68,32 @@ export default function CreateAgentRun() {
       }
 
       try {
-        // Load cached default organization first for instant display
-        try {
-          const cachedDefaultOrgId = await LocalStorage.getItem<string>("defaultOrganizationId");
-          const cachedDefaultOrg = await LocalStorage.getItem<string>("defaultOrganization");
-          
-          if (cachedDefaultOrgId) {
-            setDefaultOrgId(cachedDefaultOrgId);
-          }
-          
-          // If we have a cached default organization, use it to populate the dropdown immediately
-          if (cachedDefaultOrg) {
-            try {
-              const defaultOrg: OrganizationResponse = JSON.parse(cachedDefaultOrg);
-              // Validate the cached organization has required structure
-              if (defaultOrg.id && defaultOrg.name && defaultOrg.settings) {
-                setOrganizations([defaultOrg]);
-                setIsLoadingOrgs(false); // Stop loading immediately with cached data
-              }
-            } catch (parseError) {
-              console.log("Could not parse cached default organization:", parseError);
+        // Load cached organizations and default from local storage
+        const cachedDefaultOrgId = await LocalStorage.getItem<string>("defaultOrganizationId");
+        const cachedDefaultOrg = await LocalStorage.getItem<string>("defaultOrganization");
+        
+        if (cachedDefaultOrgId) {
+          setDefaultOrgId(cachedDefaultOrgId);
+        }
+        
+        // Use cached default organization if available
+        if (cachedDefaultOrg) {
+          try {
+            const defaultOrg: OrganizationResponse = JSON.parse(cachedDefaultOrg);
+            if (defaultOrg.id && defaultOrg.name && defaultOrg.settings) {
+              setOrganizations([defaultOrg]);
             }
+          } catch (parseError) {
+            console.log("Could not parse cached default organization:", parseError);
           }
-        } catch (error) {
-          console.log("Could not load cached default organization:", error);
         }
 
-        // Then validate and refresh in background
+        // Just validate credentials without fetching orgs (we have them cached)
         const validation = await validateCredentials();
         if (!validation.isValid) {
           setValidationError(validation.error || "Invalid credentials");
           setIsLoadingOrgs(false);
           return;
-        }
-
-        // Get full organization data with settings
-        try {
-          const orgResponse = await apiClient.getOrganizations();
-          if (orgResponse.items && orgResponse.items.length > 0) {
-            // Update with fresh data
-            setOrganizations(orgResponse.items);
-            
-            // Load default organization ID if not already loaded
-            if (!defaultOrgId) {
-              try {
-                const cachedDefaultOrgId = await LocalStorage.getItem<string>("defaultOrganizationId");
-                if (cachedDefaultOrgId) {
-                  setDefaultOrgId(cachedDefaultOrgId);
-                }
-              } catch (error) {
-                console.log("Could not load default organization:", error);
-              }
-            }
-          }
-        } catch (orgError) {
-          console.log("Could not fetch organizations:", orgError);
-          // Fallback to validation organizations if available
-          if (validation.organizations) {
-            // Convert simple org structure to full structure with default settings
-            const orgsWithSettings: OrganizationResponse[] = validation.organizations.map(org => ({
-              ...org,
-              settings: {
-                enable_pr_creation: true,
-                enable_rules_detection: true,
-              }
-            }));
-            setOrganizations(orgsWithSettings);
-          }
         }
           
         // TODO: Re-enable user profile fetching later
@@ -278,6 +250,11 @@ export default function CreateAgentRun() {
         </ActionPanel>
       }
     >
+      <Form.Description
+        title=""
+        text={getWelcomeMessage()}
+      />
+      
       <Form.TextArea
         id="prompt"
         title=""

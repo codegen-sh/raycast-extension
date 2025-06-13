@@ -186,7 +186,7 @@ export class CodegenAPIClient {
 
   // Get current user info from alpha /me endpoint
   async getMe(): Promise<UserResponse> {
-    return this.makeRequest<UserResponse>("/user/me");
+    return this.makeRequest<UserResponse>("/v1/alpha/user/me");
   }
 
   // Validation Method
