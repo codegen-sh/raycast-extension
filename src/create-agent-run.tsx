@@ -95,7 +95,7 @@ export default function CreateAgentRun() {
         try {
           const clipboardText = await Clipboard.readText();
           if (clipboardText && clipboardText.trim()) {
-            prompt += `\n\nClipboard content:\n${clipboardText}`;
+            prompt += `\n\n${clipboardText}`;
           }
         } catch (error) {
           console.warn("Failed to read clipboard:", error);
