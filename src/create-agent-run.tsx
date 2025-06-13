@@ -10,6 +10,7 @@ import {
   Clipboard,
   Icon,
   Color,
+  LocalStorage,
 } from "@raycast/api";
 import { getCurrentUserFirstName } from "./utils/userProfile";
 import { getAPIClient } from "./api/client";
@@ -36,6 +37,7 @@ export default function CreateAgentRun() {
   const [isLoadingOrgs, setIsLoadingOrgs] = useState(true);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [userFirstName, setUserFirstName] = useState<string>("User");
+  const [defaultOrgId, setDefaultOrgId] = useState<string | null>(null);
   const { refresh } = useCachedAgentRuns();
 
   const preferences = getPreferenceValues<Preferences>();
@@ -53,6 +55,33 @@ export default function CreateAgentRun() {
       }
 
       try {
+        // Load cached default organization first for instant display
+        try {
+          const cachedDefaultOrgId = await LocalStorage.getItem<string>("defaultOrganizationId");
+          const cachedDefaultOrg = await LocalStorage.getItem<string>("defaultOrganization");
+          
+          if (cachedDefaultOrgId) {
+            setDefaultOrgId(cachedDefaultOrgId);
+          }
+          
+          // If we have a cached default organization, use it to populate the dropdown immediately
+          if (cachedDefaultOrg) {
+            try {
+              const defaultOrg: OrganizationResponse = JSON.parse(cachedDefaultOrg);
+              // Validate the cached organization has required structure
+              if (defaultOrg.id && defaultOrg.name && defaultOrg.settings) {
+                setOrganizations([defaultOrg]);
+                setIsLoadingOrgs(false); // Stop loading immediately with cached data
+              }
+            } catch (parseError) {
+              console.log("Could not parse cached default organization:", parseError);
+            }
+          }
+        } catch (error) {
+          console.log("Could not load cached default organization:", error);
+        }
+
+        // Then validate and refresh in background
         const validation = await validateCredentials();
         if (!validation.isValid) {
           setValidationError(validation.error || "Invalid credentials");
@@ -60,25 +89,56 @@ export default function CreateAgentRun() {
           return;
         }
 
-        if (validation.organizations) {
-          setOrganizations(validation.organizations);
-          
-          // TODO: Re-enable user profile fetching later
-          // Try to get user's first name for personalization
-          // try {
-          //   const credentials = getCredentials();
-          //   const firstOrgId = validation.organizations[0]?.id;
-          //   const userId = credentials.userId ? parseInt(credentials.userId, 10) : undefined;
-          //   
-          //   if (firstOrgId) {
-          //     const firstName = await getCurrentUserFirstName(firstOrgId, userId);
-          //     setUserFirstName(firstName);
-          //   }
-          // } catch (error) {
-          //   console.log("Could not fetch user name:", error);
-          //   // Keep default "User" name
-          // }
+        // Get full organization data with settings
+        try {
+          const orgResponse = await apiClient.getOrganizations();
+          if (orgResponse.items && orgResponse.items.length > 0) {
+            // Update with fresh data
+            setOrganizations(orgResponse.items);
+            
+            // Load default organization ID if not already loaded
+            if (!defaultOrgId) {
+              try {
+                const cachedDefaultOrgId = await LocalStorage.getItem<string>("defaultOrganizationId");
+                if (cachedDefaultOrgId) {
+                  setDefaultOrgId(cachedDefaultOrgId);
+                }
+              } catch (error) {
+                console.log("Could not load default organization:", error);
+              }
+            }
+          }
+        } catch (orgError) {
+          console.log("Could not fetch organizations:", orgError);
+          // Fallback to validation organizations if available
+          if (validation.organizations) {
+            // Convert simple org structure to full structure with default settings
+            const orgsWithSettings: OrganizationResponse[] = validation.organizations.map(org => ({
+              ...org,
+              settings: {
+                enable_pr_creation: true,
+                enable_rules_detection: true,
+              }
+            }));
+            setOrganizations(orgsWithSettings);
+          }
         }
+          
+        // TODO: Re-enable user profile fetching later
+        // Try to get user's first name for personalization
+        // try {
+        //   const credentials = getCredentials();
+        //   const firstOrgId = validation.organizations[0]?.id;
+        //   const userId = credentials.userId ? parseInt(credentials.userId, 10) : undefined;
+        //   
+        //   if (firstOrgId) {
+        //     const firstName = await getCurrentUserFirstName(firstOrgId, userId);
+        //     setUserFirstName(firstName);
+        //   }
+        // } catch (error) {
+        //   console.log("Could not fetch user name:", error);
+        //   // Keep default "User" name
+        // }
       } catch (error) {
         setValidationError(error instanceof Error ? error.message : "Failed to validate credentials");
       } finally {
@@ -218,12 +278,24 @@ export default function CreateAgentRun() {
         </ActionPanel>
       }
     >
+      <Form.TextArea
+        id="prompt"
+        title=""
+        placeholder="What are we building today?"
+      />
+
+      <Form.Checkbox
+        id="attachClipboard"
+        title=""
+        label="Include what's on my clipboard for context"
+      />
+
+
       <Form.Dropdown
         id="organizationId"
-        title=""
-        placeholder="Which organization?"
-        defaultValue={preferences.defaultOrganization}
-        info="Just so I know where to create this"
+        placeholder="Choose org"
+        defaultValue={defaultOrgId || preferences.defaultOrganization}
+        storeValue={true}
       >
         {organizations.map((org) => (
           <Form.Dropdown.Item
@@ -233,19 +305,6 @@ export default function CreateAgentRun() {
           />
         ))}
       </Form.Dropdown>
-
-      <Form.TextArea
-        id="prompt"
-        title=""
-        placeholder="What are we building today?"
-        info="Think of this as telling me exactly what you need. I work best with clear, specific instructions."
-      />
-
-      <Form.Checkbox
-        id="attachClipboard"
-        title=""
-        label="Include what's on my clipboard for context"
-      />
     </Form>
   );
 }
