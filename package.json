@@ -84,13 +84,13 @@
       "required": false,
       "title": "API Base URL",
       "description": "Custom API base URL (leave empty for default)",
-      "placeholder": "https://api.codegen.com",
-      "default": "https://api.codegen.com"
+      "placeholder": "https://api.codegen.com"
     }
   ],
   "dependencies": {
     "@raycast/api": "^1.83.1",
-    "@raycast/utils": "^1.17.0"
+    "@raycast/utils": "^1.17.0",
+    "dotenv": "^16.5.0"
   },
   "devDependencies": {
     "@raycast/eslint-config": "^2.0.0",
