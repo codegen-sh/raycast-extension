@@ -1,8 +1,10 @@
-import { getPreferenceValues, showToast, Toast } from "@raycast/api";
+import { getPreferenceValues, showToast, Toast, LocalStorage } from "@raycast/api";
+import { getUserProfileService } from "./userProfile";
 
 export interface Preferences {
   apiToken: string;
   defaultOrganization?: string;
+  userId?: string;
   apiBaseUrl?: string;
 }
 
@@ -10,6 +12,7 @@ export interface CredentialsValidationResult {
   isValid: boolean;
   error?: string;
   organizations?: Array<{ id: number; name: string }>;
+  userDisplayName?: string;
 }
 
 /**
@@ -64,11 +67,34 @@ export async function validateCredentials(): Promise<CredentialsValidationResult
       };
     }
 
-    const data = await response.json();
+    const data = await response.json() as { items?: Array<{ id: number; name: string }> };
+    
+    // TODO: Re-enable user profile fetching later
+    // Try to fetch user profile for personalization
+    // let userDisplayName: string | undefined;
+    // try {
+    //   const credentials = getCredentials();
+    //   const userProfileService = getUserProfileService();
+    //   
+    //   // Get the first organization ID to fetch user profile
+    //   const firstOrgId = data.items?.[0]?.id;
+    //   const userId = credentials.userId ? parseInt(credentials.userId, 10) : undefined;
+    //   
+    //   if (firstOrgId) {
+    //     const profile = await userProfileService.getCurrentUserProfile(firstOrgId, userId);
+    //     if (profile) {
+    //       userDisplayName = userProfileService.getDisplayName(profile);
+    //     }
+    //   }
+    // } catch (profileError) {
+    //   console.log("Could not fetch user profile during validation:", profileError);
+    //   // Don't fail validation if profile fetch fails
+    // }
     
     return {
       isValid: true,
       organizations: data.items || [],
+      // userDisplayName,
     };
   } catch (error) {
     console.error("Credentials validation error:", error);
@@ -118,15 +144,26 @@ export function hasCredentials(): boolean {
 }
 
 /**
- * Get the default organization ID from preferences or return null
+ * Get the default organization ID from preferences or LocalStorage
  */
-export function getDefaultOrganizationId(): number | null {
+export async function getDefaultOrganizationId(): Promise<number | null> {
   try {
+    // First check LocalStorage (set by the organization list)
+    const localStorageOrgId = await LocalStorage.getItem<string>("defaultOrganizationId");
+    if (localStorageOrgId) {
+      const orgId = parseInt(localStorageOrgId, 10);
+      if (!isNaN(orgId)) {
+        return orgId;
+      }
+    }
+
+    // Fallback to preferences
     const credentials = getCredentials();
     if (credentials.defaultOrganization) {
       const orgId = parseInt(credentials.defaultOrganization, 10);
       return isNaN(orgId) ? null : orgId;
     }
+    
     return null;
   } catch {
     return null;

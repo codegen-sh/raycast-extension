@@ -60,13 +60,20 @@ export default function ListOrganizations() {
   // Set default organization
   const setDefaultOrganization = async (orgId: number) => {
     try {
+      const selectedOrg = organizations.find(org => org.id === orgId);
+      
+      // Store both the ID and the full organization data
       await LocalStorage.setItem("defaultOrganizationId", orgId.toString());
+      if (selectedOrg) {
+        await LocalStorage.setItem("defaultOrganization", JSON.stringify(selectedOrg));
+      }
+      
       setDefaultOrgId(orgId);
       
       await showToast({
         style: Toast.Style.Success,
         title: "Default Organization Set",
-        message: `Organization will be used as default for new agent runs`,
+        message: `${selectedOrg?.name || 'Organization'} will be used as default for new agent runs`,
       });
     } catch (error) {
       await showToast({
@@ -81,6 +88,7 @@ export default function ListOrganizations() {
   const clearDefaultOrganization = async () => {
     try {
       await LocalStorage.removeItem("defaultOrganizationId");
+      await LocalStorage.removeItem("defaultOrganization");
       setDefaultOrgId(null);
       
       await showToast({
@@ -169,19 +177,6 @@ export default function ListOrganizations() {
               actions={
                 <ActionPanel>
                   <ActionPanel.Section>
-                    <Action.CopyToClipboard
-                      title="Copy Organization ID"
-                      content={org.id.toString()}
-                      shortcut={{ modifiers: ["cmd"], key: "c" }}
-                    />
-                    <Action.CopyToClipboard
-                      title="Copy Organization Name"
-                      content={org.name}
-                      shortcut={{ modifiers: ["cmd", "shift"], key: "c" }}
-                    />
-                  </ActionPanel.Section>
-
-                  <ActionPanel.Section>
                     {!isDefault ? (
                       <Action
                         title="Set as Default"
@@ -197,6 +192,19 @@ export default function ListOrganizations() {
                         shortcut={{ modifiers: ["cmd"], key: "d" }}
                       />
                     )}
+                  </ActionPanel.Section>
+
+                  <ActionPanel.Section>
+                    <Action.CopyToClipboard
+                      title="Copy Organization ID"
+                      content={org.id.toString()}
+                      shortcut={{ modifiers: ["cmd"], key: "c" }}
+                    />
+                    <Action.CopyToClipboard
+                      title="Copy Organization Name"
+                      content={org.name}
+                      shortcut={{ modifiers: ["cmd", "shift"], key: "c" }}
+                    />
                   </ActionPanel.Section>
 
                   <ActionPanel.Section>

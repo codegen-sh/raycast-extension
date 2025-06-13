@@ -6,6 +6,7 @@ import { getAPIClient } from "../api/client";
 import { filterAgentRuns, sortAgentRuns } from "../utils/filtering";
 import { getDefaultOrganizationId } from "../utils/credentials";
 import { SyncStatus } from "../storage/cacheTypes";
+import { getBackgroundMonitoringService } from "../utils/backgroundMonitoring";
 
 interface UseCachedAgentRunsResult {
   agentRuns: AgentRunResponse[];
@@ -29,7 +30,7 @@ export function useCachedAgentRuns(): UseCachedAgentRunsResult {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(SyncStatus.IDLE);
-  const [organizationId, setOrganizationIdState] = useState<number | null>(getDefaultOrganizationId());
+  const [organizationId, setOrganizationIdState] = useState<number | null>(null);
   
   // Filter and sort state
   const [filters, setFilters] = useState<AgentRunFilters>({});
@@ -40,13 +41,40 @@ export function useCachedAgentRuns(): UseCachedAgentRunsResult {
 
   const cache = getAgentRunCache();
   const apiClient = getAPIClient();
+  const backgroundMonitoring = getBackgroundMonitoringService();
+
+  // Initialize organization ID and start background monitoring
+  useEffect(() => {
+    async function initializeOrgId() {
+      const defaultOrgId = await getDefaultOrganizationId();
+      console.log(`Initialized organization ID: ${defaultOrgId}`);
+      setOrganizationIdState(defaultOrgId);
+    }
+    initializeOrgId();
+
+    // Start background monitoring when the hook is first used
+    if (!backgroundMonitoring.isMonitoring()) {
+      backgroundMonitoring.start();
+    }
+
+    // Cleanup function to stop monitoring when component unmounts
+    return () => {
+      // Note: We don't stop monitoring here because other components might be using it
+      // The monitoring will continue running in the background
+    };
+  }, [backgroundMonitoring]);
 
   // Load cached data
   const loadCachedData = useCallback(async () => {
-    if (!organizationId) return;
+    if (!organizationId) {
+      console.log("No organization ID set, skipping cache load");
+      return;
+    }
 
+    console.log(`Loading cached data for organization ${organizationId}`);
     try {
       const cachedRuns = await cache.getAgentRuns(organizationId);
+      console.log(`Loaded ${cachedRuns.length} cached runs for org ${organizationId}`);
       setAgentRuns(cachedRuns);
       
       const status = await cache.getSyncStatus(organizationId);

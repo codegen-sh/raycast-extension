@@ -1,4 +1,4 @@
-import { AgentRunResponse, OrganizationResponse, UserResponse } from "../api/types";
+import { AgentRunResponse, OrganizationResponse, UserResponse, TrackedAgentRun, AgentRunStatusChange } from "../api/types";
 
 // Cache Keys
 export const CACHE_KEYS = {
@@ -6,6 +6,7 @@ export const CACHE_KEYS = {
   ORGANIZATIONS: "organizations", 
   USERS: "users",
   METADATA: "metadata",
+  TRACKED_RUNS: "tracked-runs",
 } as const;
 
 // Cache Namespaces
@@ -85,3 +86,7 @@ export interface SyncState {
   progress?: number;
 }
 
+// Tracked Agent Run Cache Entry
+export interface TrackedAgentRunCacheEntry extends CacheEntry<TrackedAgentRun> {
+  organizationId: number;
+}

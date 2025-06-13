@@ -71,6 +71,14 @@
       "placeholder": "123"
     },
     {
+      "name": "userId",
+      "type": "textfield",
+      "required": false,
+      "title": "User ID",
+      "description": "Your user ID for personalized features (optional)",
+      "placeholder": "456"
+    },
+    {
       "name": "apiBaseUrl",
       "type": "textfield",
       "required": false,
@@ -101,4 +109,3 @@
     "publish": "npx @raycast/api@latest publish"
   }
 }
-

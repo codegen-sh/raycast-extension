@@ -8,11 +8,17 @@ import {
   useNavigation,
   getPreferenceValues,
   Clipboard,
+  Icon,
+  Color,
+  LocalStorage,
 } from "@raycast/api";
+import { getCurrentUserFirstName } from "./utils/userProfile";
 import { getAPIClient } from "./api/client";
 import { getAgentRunCache } from "./storage/agentRunCache";
-import { validateCredentials, hasCredentials } from "./utils/credentials";
+import { validateCredentials, hasCredentials, getCredentials } from "./utils/credentials";
 import { OrganizationResponse } from "./api/types";
+import { useCachedAgentRuns } from "./hooks/useCachedAgentRuns";
+import { getBackgroundMonitoringService } from "./utils/backgroundMonitoring";
 
 interface FormValues {
   prompt: string;
@@ -30,10 +36,14 @@ export default function CreateAgentRun() {
   const [organizations, setOrganizations] = useState<OrganizationResponse[]>([]);
   const [isLoadingOrgs, setIsLoadingOrgs] = useState(true);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [userFirstName, setUserFirstName] = useState<string>("User");
+  const [defaultOrgId, setDefaultOrgId] = useState<string | null>(null);
+  const { refresh } = useCachedAgentRuns();
 
   const preferences = getPreferenceValues<Preferences>();
   const apiClient = getAPIClient();
   const cache = getAgentRunCache();
+  const backgroundMonitoring = getBackgroundMonitoringService();
 
   // Validate credentials and load organizations on mount
   useEffect(() => {
@@ -45,6 +55,33 @@ export default function CreateAgentRun() {
       }
 
       try {
+        // Load cached default organization first for instant display
+        try {
+          const cachedDefaultOrgId = await LocalStorage.getItem<string>("defaultOrganizationId");
+          const cachedDefaultOrg = await LocalStorage.getItem<string>("defaultOrganization");
+          
+          if (cachedDefaultOrgId) {
+            setDefaultOrgId(cachedDefaultOrgId);
+          }
+          
+          // If we have a cached default organization, use it to populate the dropdown immediately
+          if (cachedDefaultOrg) {
+            try {
+              const defaultOrg: OrganizationResponse = JSON.parse(cachedDefaultOrg);
+              // Validate the cached organization has required structure
+              if (defaultOrg.id && defaultOrg.name && defaultOrg.settings) {
+                setOrganizations([defaultOrg]);
+                setIsLoadingOrgs(false); // Stop loading immediately with cached data
+              }
+            } catch (parseError) {
+              console.log("Could not parse cached default organization:", parseError);
+            }
+          }
+        } catch (error) {
+          console.log("Could not load cached default organization:", error);
+        }
+
+        // Then validate and refresh in background
         const validation = await validateCredentials();
         if (!validation.isValid) {
           setValidationError(validation.error || "Invalid credentials");
@@ -52,9 +89,56 @@ export default function CreateAgentRun() {
           return;
         }
 
-        if (validation.organizations) {
-          setOrganizations(validation.organizations);
+        // Get full organization data with settings
+        try {
+          const orgResponse = await apiClient.getOrganizations();
+          if (orgResponse.items && orgResponse.items.length > 0) {
+            // Update with fresh data
+            setOrganizations(orgResponse.items);
+            
+            // Load default organization ID if not already loaded
+            if (!defaultOrgId) {
+              try {
+                const cachedDefaultOrgId = await LocalStorage.getItem<string>("defaultOrganizationId");
+                if (cachedDefaultOrgId) {
+                  setDefaultOrgId(cachedDefaultOrgId);
+                }
+              } catch (error) {
+                console.log("Could not load default organization:", error);
+              }
+            }
+          }
+        } catch (orgError) {
+          console.log("Could not fetch organizations:", orgError);
+          // Fallback to validation organizations if available
+          if (validation.organizations) {
+            // Convert simple org structure to full structure with default settings
+            const orgsWithSettings: OrganizationResponse[] = validation.organizations.map(org => ({
+              ...org,
+              settings: {
+                enable_pr_creation: true,
+                enable_rules_detection: true,
+              }
+            }));
+            setOrganizations(orgsWithSettings);
+          }
         }
+          
+        // TODO: Re-enable user profile fetching later
+        // Try to get user's first name for personalization
+        // try {
+        //   const credentials = getCredentials();
+        //   const firstOrgId = validation.organizations[0]?.id;
+        //   const userId = credentials.userId ? parseInt(credentials.userId, 10) : undefined;
+        //   
+        //   if (firstOrgId) {
+        //     const firstName = await getCurrentUserFirstName(firstOrgId, userId);
+        //     setUserFirstName(firstName);
+        //   }
+        // } catch (error) {
+        //   console.log("Could not fetch user name:", error);
+        //   // Keep default "User" name
+        // }
       } catch (error) {
         setValidationError(error instanceof Error ? error.message : "Failed to validate credentials");
       } finally {
@@ -69,8 +153,8 @@ export default function CreateAgentRun() {
     if (!values.prompt.trim()) {
       await showToast({
         style: Toast.Style.Failure,
-        title: "Validation Error",
-        message: "Prompt is required",
+        title: "Let me know what to build",
+        message: "I need a description of what you want me to create",
       });
       return;
     }
@@ -78,8 +162,8 @@ export default function CreateAgentRun() {
     if (!values.organizationId) {
       await showToast({
         style: Toast.Style.Failure,
-        title: "Validation Error", 
-        message: "Organization is required",
+        title: "Choose an organization", 
+        message: "I need to know which organization to create this in",
       });
       return;
     }
@@ -95,7 +179,7 @@ export default function CreateAgentRun() {
         try {
           const clipboardText = await Clipboard.readText();
           if (clipboardText && clipboardText.trim()) {
-            prompt += `\n\n${clipboardText}`;
+            prompt += `\n\n--- Additional Context ---\n${clipboardText}`;
           }
         } catch (error) {
           console.warn("Failed to read clipboard:", error);
@@ -110,12 +194,23 @@ export default function CreateAgentRun() {
       // Cache the new agent run
       await cache.updateAgentRun(organizationId, agentRun);
 
+      // Add to tracking for notifications
+      await cache.addToTracking(organizationId, agentRun);
+
+      // Start background monitoring if not already running
+      if (!backgroundMonitoring.isMonitoring()) {
+        backgroundMonitoring.start();
+      }
+
+      // Refresh the list view to show the new run
+      await refresh();
+
       await showToast({
         style: Toast.Style.Success,
-        title: "Agent Run Created",
-        message: `Agent run #${agentRun.id} has been started`,
+        title: "Got it! I'm on it",
+        message: `Starting agent run #${agentRun.id} - I'll let you know when it's done`,
         primaryAction: {
-          title: "View Run",
+          title: "View Progress",
           onAction: () => {
             // Navigate to agent run details
             // This would be implemented when we create the details view
@@ -129,8 +224,8 @@ export default function CreateAgentRun() {
       
       await showToast({
         style: Toast.Style.Failure,
-        title: "Failed to Create Agent Run",
-        message: error instanceof Error ? error.message : "Unknown error occurred",
+        title: "Oops, something went wrong",
+        message: error instanceof Error ? error.message : "Let's try that again",
       });
     } finally {
       setIsLoading(false);
@@ -140,17 +235,23 @@ export default function CreateAgentRun() {
   if (validationError) {
     return (
       <Form
+        navigationTitle="Let's get you set up"
         actions={
           <ActionPanel>
             <Action.OpenInBrowser
-              title="Open Extension Preferences"
+              title="Configure API Token"
               url="raycast://extensions/codegen/codegen"
+              icon={Icon.Gear}
             />
           </ActionPanel>
         }
       >
         <Form.Description
-          title="Authentication Error"
+          title=""
+          text="I need your API token to get started. Once you add it, we can build some amazing things together!"
+        />
+        <Form.Description
+          title=""
           text={validationError}
         />
       </Form>
@@ -159,26 +260,42 @@ export default function CreateAgentRun() {
 
   return (
     <Form
+      navigationTitle="What are we building today?"
       isLoading={isLoading || isLoadingOrgs}
       actions={
         <ActionPanel>
           <Action.SubmitForm
-            title="Create Agent Run"
+            title="Let's Build This"
+            icon={Icon.Rocket}
             onSubmit={handleSubmit}
           />
           <Action.Paste
-            title="Paste from Clipboard"
+            title="Add from Clipboard"
             target="prompt"
+            icon={Icon.Clipboard}
             shortcut={{ modifiers: ["cmd"], key: "v" }}
           />
         </ActionPanel>
       }
     >
+      <Form.TextArea
+        id="prompt"
+        title=""
+        placeholder="What are we building today?"
+      />
+
+      <Form.Checkbox
+        id="attachClipboard"
+        title=""
+        label="Include what's on my clipboard for context"
+      />
+
+
       <Form.Dropdown
         id="organizationId"
-        title="Organization"
-        placeholder="Select an organization"
-        defaultValue={preferences.defaultOrganization}
+        placeholder="Choose org"
+        defaultValue={defaultOrgId || preferences.defaultOrganization}
+        storeValue={true}
       >
         {organizations.map((org) => (
           <Form.Dropdown.Item
@@ -188,28 +305,6 @@ export default function CreateAgentRun() {
           />
         ))}
       </Form.Dropdown>
-
-      <Form.TextArea
-        id="prompt"
-        title="Prompt"
-        placeholder="Enter your prompt for the AI agent..."
-        info="Describe what you want the AI agent to do. Be specific and clear."
-      />
-
-      <Form.Checkbox
-        id="attachClipboard"
-        title="Attach Clipboard"
-        label="Include clipboard content with the prompt"
-        info="If checked, the current clipboard content will be appended to your prompt"
-      />
-
-      <Form.Description
-        title="Tips"
-        text="• Be specific about what you want the agent to do
-• Include relevant context in your prompt
-• Use the clipboard attachment for code or text you want the agent to work with"
-      />
     </Form>
   );
 }
-
