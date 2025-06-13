@@ -143,6 +143,12 @@ export function getStatusFilterOptions(
     [AgentRunStatus.FAILED]: "Failed",
     [AgentRunStatus.PAUSED]: "Paused",
     [AgentRunStatus.PENDING]: "Pending",
+    [AgentRunStatus.ERROR]: "Error",
+    [AgentRunStatus.EVALUATION]: "Evaluation",
+    [AgentRunStatus.CANCELLED]: "Cancelled",
+    [AgentRunStatus.TIMEOUT]: "Timeout",
+    [AgentRunStatus.MAX_ITERATIONS_REACHED]: "Max Iterations",
+    [AgentRunStatus.OUT_OF_TOKENS]: "Out of Tokens",
   };
 
   return Object.entries(statusCounts).map(([status, count]) => ({

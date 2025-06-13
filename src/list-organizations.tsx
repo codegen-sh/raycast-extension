@@ -20,8 +20,14 @@ import { validateCredentials, hasCredentials } from "./utils/credentials";
 import { OrganizationResponse } from "./api/types";
 import { useCurrentUser } from "./hooks/useCurrentUser";
 
+// Type for organizations from validation (simplified structure)
+type BasicOrganization = {
+  id: number;
+  name: string;
+};
+
 export default function ListOrganizations() {
-  const [organizations, setOrganizations] = useState<OrganizationResponse[]>([]);
+  const [organizations, setOrganizations] = useState<BasicOrganization[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [defaultOrgId, setDefaultOrgId] = useState<number | null>(null);
@@ -185,9 +191,6 @@ export default function ListOrganizations() {
               icon={isDefault ? { source: Icon.Star, tintColor: "#FFD700" } : Icon.Building}
               accessories={[
                 ...(isDefault ? [{ text: "Default", icon: Icon.Star }] : []),
-                {
-                  text: `PR Creation: ${org.settings.enable_pr_creation ? "Enabled" : "Disabled"}`,
-                },
               ]}
               actions={
                 <ActionPanel>

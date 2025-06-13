@@ -350,7 +350,7 @@ export default function ListAgentRuns() {
     >
       {filteredRuns.length === 0 && !isLoading ? (
         <List.EmptyView
-          icon={Icon.RocketShip}
+          icon={Icon.Rocket}
           title={hasActiveFilters(filters) ? "No Matching Agent Runs" : "No Agent Runs"}
           description={
             hasActiveFilters(filters)

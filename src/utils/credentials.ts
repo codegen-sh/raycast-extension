@@ -2,6 +2,7 @@ import { getPreferenceValues, showToast, Toast, LocalStorage } from "@raycast/ap
 import { getUserProfileService } from "./userProfile";
 import { storeUserInfo, clearStoredUserInfo, isStoredUserInfoValid, getStoredUserInfo } from "../storage/userStorage";
 import { UserResponse } from "../api/types";
+import { API_ENDPOINTS, DEFAULT_API_BASE_URL } from "../api/constants";
 
 export interface Preferences {
   apiToken: string;
@@ -102,7 +103,7 @@ export async function validateCredentials(): Promise<CredentialsValidationResult
     }
     
     console.log("💫 No valid cache found - fetching fresh data");
-    const endpoint = `${credentials.apiBaseUrl}/v1/alpha/user/me`;
+    const endpoint = `${credentials.apiBaseUrl || DEFAULT_API_BASE_URL}${API_ENDPOINTS.USER_ME}`;
     console.log("🌐 Making request to:", endpoint);
     
     // Only make API call if no valid cache exists
@@ -177,7 +178,7 @@ export async function validateCredentials(): Promise<CredentialsValidationResult
     // Fetch and cache organizations for first-time setup
     let organizations: Array<{ id: number; name: string }> = [];
     try {
-      const orgEndpoint = `${credentials.apiBaseUrl}/v1/organizations`;
+      const orgEndpoint = `${credentials.apiBaseUrl || DEFAULT_API_BASE_URL}${API_ENDPOINTS.ORGANIZATIONS}`;
       console.log("🏢 Fetching organizations from:", orgEndpoint);
       
       const orgResponse = await fetch(orgEndpoint, {
@@ -351,7 +352,7 @@ export async function refreshUserDataFromAPI(): Promise<CredentialsValidationRes
     await clearStoredUserInfo();
     await LocalStorage.removeItem("cachedOrganizations");
     
-    const endpoint = `${credentials.apiBaseUrl}/v1/alpha/user/me`;
+    const endpoint = `${credentials.apiBaseUrl || DEFAULT_API_BASE_URL}${API_ENDPOINTS.USER_ME}`;
     console.log("🌐 Fetching fresh user info from:", endpoint);
     
     const meResponse = await fetch(endpoint, {
@@ -384,7 +385,7 @@ export async function refreshUserDataFromAPI(): Promise<CredentialsValidationRes
     // Fetch and cache fresh organizations
     let organizations: Array<{ id: number; name: string }> = [];
     try {
-      const orgEndpoint = `${credentials.apiBaseUrl}/v1/organizations`;
+      const orgEndpoint = `${credentials.apiBaseUrl || DEFAULT_API_BASE_URL}${API_ENDPOINTS.ORGANIZATIONS}`;
       console.log("🏢 Fetching fresh organizations from:", orgEndpoint);
       
       const orgResponse = await fetch(orgEndpoint, {
