@@ -9,6 +9,7 @@ A Raycast extension for managing AI agent runs with advanced filtering, real-tim
 - **Real-time Monitoring**: Automatic background monitoring of agent run status changes
 - **Native macOS Notifications**: Get clickable system notifications when agent runs complete
 - **Organization Management**: Switch between different organizations
+- **User Verification**: Automatic API token validation and user info retrieval during setup
 
 ## Setup
 
@@ -21,8 +22,13 @@ A Raycast extension for managing AI agent runs with advanced filtering, real-tim
    Or search for "Raycast Notification" in the Raycast Store.
 
 2. **Configure your Codegen credentials** in the extension preferences:
-   - API Token
+   - API Token (required)
    - Default Organization (optional)
+   
+   When you enter your API token, the extension will automatically:
+   - Verify the token is valid by calling the `/user/me` endpoint
+   - Retrieve and store your user information locally
+   - Display your name/username in the interface
 
 ### Installation
 

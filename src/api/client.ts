@@ -1,5 +1,6 @@
 import { showToast, Toast } from "@raycast/api";
 import { getCredentials, showCredentialsError, validateCredentials } from "../utils/credentials";
+import { clearStoredUserInfo } from "../storage/userStorage";
 import {
   AgentRunResponse,
   UserResponse,
@@ -183,9 +184,9 @@ export class CodegenAPIClient {
     );
   }
 
-  // Get current user info (if there's a /me endpoint)
+  // Get current user info from alpha /me endpoint
   async getMe(): Promise<UserResponse> {
-    return this.makeRequest<UserResponse>("/v1/me");
+    return this.makeRequest<UserResponse>("/user/me");
   }
 
   // Validation Method
@@ -210,7 +211,8 @@ export function getAPIClient(): CodegenAPIClient {
 }
 
 // Reset the client (useful when credentials change)
-export function resetAPIClient(): void {
+export async function resetAPIClient(): Promise<void> {
   apiClient = null;
+  // Clear stored user info when credentials change
+  await clearStoredUserInfo();
 }
-

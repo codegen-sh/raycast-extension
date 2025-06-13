@@ -11,6 +11,7 @@ import {
 import { getAPIClient } from "./api/client";
 import { validateCredentials, hasCredentials } from "./utils/credentials";
 import { OrganizationResponse } from "./api/types";
+import { useCurrentUser } from "./hooks/useCurrentUser";
 
 export default function ListOrganizations() {
   const [organizations, setOrganizations] = useState<OrganizationResponse[]>([]);
@@ -19,6 +20,7 @@ export default function ListOrganizations() {
   const [defaultOrgId, setDefaultOrgId] = useState<number | null>(null);
 
   const apiClient = getAPIClient();
+  const { displayName: userDisplayName } = useCurrentUser();
 
   // Load organizations and default org preference
   useEffect(() => {
@@ -145,8 +147,14 @@ export default function ListOrganizations() {
     );
   }
 
+  const navigationTitle = userDisplayName ? `Organizations - ${userDisplayName}` : "Organizations";
+
   return (
-    <List isLoading={isLoading} searchBarPlaceholder="Search organizations...">
+    <List 
+      isLoading={isLoading} 
+      searchBarPlaceholder="Search organizations..."
+      navigationTitle={navigationTitle}
+    >
       {organizations.length === 0 && !isLoading ? (
         <List.EmptyView
           icon={Icon.Building}
@@ -224,4 +232,3 @@ export default function ListOrganizations() {
     </List>
   );
 }
-
