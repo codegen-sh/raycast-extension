@@ -158,12 +158,28 @@ export default function ListAgentRuns() {
       let suggestedInput = "";
       
       if (clipboardText) {
-        // Try to extract agent run ID from clipboard if it looks like a URL or ID
-        const urlMatch = clipboardText.match(/codegen\.com\/agent\/trace\/(\d+)/);
-        if (urlMatch) {
-          suggestedInput = urlMatch[1]; // Extract just the ID
-        } else if (/^\d+$/.test(clipboardText.trim())) {
-          suggestedInput = clipboardText.trim(); // Use the number directly
+        console.log("🔍 Checking clipboard for agent run:", clipboardText);
+        
+        // Try multiple URL patterns to extract agent run ID
+        const urlPatterns = [
+          /codegen\.com\/agent\/trace\/(\d+)/,           // Original pattern
+          /chadcode\.sh\/agent\/trace\/(\d+)/,
+        ];
+        
+        // Try each pattern
+        for (const pattern of urlPatterns) {
+          const match = clipboardText.match(pattern);
+          if (match) {
+            suggestedInput = match[1];
+            console.log("✅ Extracted agent run ID from URL:", suggestedInput);
+            break;
+          }
+        }
+        
+        // If no URL match, check if it's just a number
+        if (!suggestedInput && /^\d+$/.test(clipboardText.trim())) {
+          suggestedInput = clipboardText.trim();
+          console.log("✅ Using direct agent run ID:", suggestedInput);
         }
       }
 
