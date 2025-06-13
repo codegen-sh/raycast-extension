@@ -7,6 +7,7 @@ export interface Preferences {
   apiToken: string;
   defaultOrganization?: string;
   userId?: string;
+  apiBaseUrl?: string;
 }
 
 export interface CredentialsValidationResult {
@@ -27,12 +28,14 @@ export function getCredentials(): Preferences {
     throw new Error("API token is required. Please set it in extension preferences.");
   }
 
-  // Check for environment variable first, then default
+  // Check for environment variable first, then preferences, then default
   const apiBaseUrl = process.env.RAYCAST_CODEGEN_API_BASE_URL || 
+                     preferences.apiBaseUrl || 
                      "https://codegen-sh-staging--rest-api.modal.run";
 
   console.log("🔧 API Base URL configuration:", {
     fromEnv: !!process.env.RAYCAST_CODEGEN_API_BASE_URL,
+    fromPrefs: !!preferences.apiBaseUrl,
     finalUrl: apiBaseUrl
   });
 
