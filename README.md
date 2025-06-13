@@ -9,6 +9,8 @@ A powerful Raycast extension for interacting with the Codegen API. Create and ma
 - **Monitor Progress**: Real-time status updates for active runs
 - **View Results**: Detailed view of completed agent runs
 - **Organization Management**: Switch between organizations seamlessly
+- **Smart Notifications**: Automatic notifications when agent run status changes
+- **Background Monitoring**: Continuous tracking of agent runs with 30-second intervals
 
 ### ⚡ **Performance & UX**
 - **Smart Caching**: Instant loading with local cache and background sync
@@ -59,6 +61,15 @@ A powerful Raycast extension for interacting with the Codegen API. Create and ma
   - Set default organization
   - View organization settings
   - Copy organization details
+
+### 🔔 **Monitor Agent Runs** (Background)
+- **Command**: `Monitor Agent Runs`
+- **Description**: Background monitoring for agent run status changes
+- **Features**:
+  - Automatic status change detection
+  - Smart notifications (Toast/HUD based on context)
+  - Cleanup of completed runs after 24 hours
+  - Runs every 30 seconds in the background
 
 ## Keyboard Shortcuts
 
@@ -153,4 +164,3 @@ MIT License - see LICENSE file for details
 ## Support
 
 For issues and feature requests, please use the GitHub issue tracker or contact support through the Codegen platform.
-

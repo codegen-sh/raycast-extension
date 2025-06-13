@@ -52,13 +52,16 @@ export interface PaginatedResponse<T> {
   pages: number;
 }
 
-// Agent Run Status Types
+// Agent Run Status Types (matching backend AgentRunStatusType)
 export enum AgentRunStatus {
   ACTIVE = "ACTIVE",
+  ERROR = "ERROR",
+  EVALUATION = "EVALUATION",
   COMPLETE = "COMPLETE",
-  FAILED = "FAILED",
-  PAUSED = "PAUSED",
-  PENDING = "PENDING",
+  CANCELLED = "CANCELLED",
+  TIMEOUT = "TIMEOUT",
+  MAX_ITERATIONS_REACHED = "MAX_ITERATIONS_REACHED",
+  OUT_OF_TOKENS = "OUT_OF_TOKENS",
 }
 
 // Local Cache Types
@@ -108,3 +111,22 @@ export interface CacheMetadata {
   organizationId?: number;
 }
 
+// Status Change Tracking
+export interface AgentRunStatusChange {
+  agentRunId: number;
+  organizationId: number;
+  oldStatus: string | null;
+  newStatus: string;
+  timestamp: string;
+  webUrl: string;
+}
+
+// Tracked Agent Run
+export interface TrackedAgentRun {
+  id: number;
+  organizationId: number;
+  lastKnownStatus: string | null;
+  createdAt: string;
+  webUrl: string;
+  addedAt: string; // When it was added to tracking
+}

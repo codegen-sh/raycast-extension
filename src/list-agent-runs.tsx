@@ -50,12 +50,18 @@ export default function ListAgentRuns() {
         return { icon: Icon.Clock, color: Color.Blue };
       case AgentRunStatus.COMPLETE:
         return { icon: Icon.CheckCircle, color: Color.Green };
-      case AgentRunStatus.FAILED:
+      case AgentRunStatus.ERROR:
         return { icon: Icon.XMarkCircle, color: Color.Red };
-      case AgentRunStatus.PAUSED:
-        return { icon: Icon.Pause, color: Color.Orange };
-      case AgentRunStatus.PENDING:
+      case AgentRunStatus.CANCELLED:
+        return { icon: Icon.Stop, color: Color.Orange };
+      case AgentRunStatus.EVALUATION:
         return { icon: Icon.Hourglass, color: Color.Yellow };
+      case AgentRunStatus.TIMEOUT:
+        return { icon: Icon.Clock, color: Color.Red };
+      case AgentRunStatus.MAX_ITERATIONS_REACHED:
+        return { icon: Icon.ArrowClockwise, color: Color.Red };
+      case AgentRunStatus.OUT_OF_TOKENS:
+        return { icon: Icon.Coins, color: Color.Red };
       default:
         return { icon: Icon.QuestionMark, color: Color.SecondaryText };
     }
@@ -325,4 +331,3 @@ export default function ListAgentRuns() {
     </List>
   );
 }
-

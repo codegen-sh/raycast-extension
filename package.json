@@ -51,6 +51,20 @@
         "switch",
         "teams"
       ]
+    },
+    {
+      "name": "monitor-agent-runs",
+      "title": "Monitor Agent Runs",
+      "subtitle": "Codegen",
+      "description": "Background monitoring for agent run status changes and notifications",
+      "mode": "no-view",
+      "interval": "30s",
+      "keywords": [
+        "monitor",
+        "background",
+        "notifications",
+        "status"
+      ]
     }
   ],
   "preferences": [
@@ -101,4 +115,3 @@
     "publish": "npx @raycast/api@latest publish"
   }
 }
-

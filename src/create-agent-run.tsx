@@ -110,10 +110,13 @@ export default function CreateAgentRun() {
       // Cache the new agent run
       await cache.updateAgentRun(organizationId, agentRun);
 
+      // Add to tracking for notifications
+      await cache.addToTracking(organizationId, agentRun);
+
       await showToast({
         style: Toast.Style.Success,
         title: "Agent Run Created",
-        message: `Agent run #${agentRun.id} has been started`,
+        message: `Agent run #${agentRun.id} has been started and is now being tracked for notifications`,
         primaryAction: {
           title: "View Run",
           onAction: () => {
@@ -212,4 +215,3 @@ export default function CreateAgentRun() {
     </Form>
   );
 }
-
