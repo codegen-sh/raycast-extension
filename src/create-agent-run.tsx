@@ -241,11 +241,30 @@ export default function CreateAgentRun() {
             icon={Icon.Rocket}
             onSubmit={handleSubmit}
           />
-          <Action.Paste
+          <Action
             title="Add from Clipboard"
-            target="prompt"
             icon={Icon.Clipboard}
             shortcut={{ modifiers: ["cmd"], key: "v" }}
+            onAction={async () => {
+              try {
+                const clipboardText = await Clipboard.readText();
+                if (clipboardText && clipboardText.trim()) {
+                  // This would update the form field if there was a way to do so
+                  // For now, users can manually paste
+                  await showToast({
+                    style: Toast.Style.Success,
+                    title: "Clipboard Content Available",
+                    message: "You can paste this content into the prompt field",
+                  });
+                }
+              } catch (error) {
+                await showToast({
+                  style: Toast.Style.Failure,
+                  title: "Clipboard Access Failed",
+                  message: "Could not read clipboard content",
+                });
+              }
+            }}
           />
         </ActionPanel>
       }

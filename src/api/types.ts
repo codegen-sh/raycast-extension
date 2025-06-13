@@ -62,6 +62,9 @@ export enum AgentRunStatus {
   TIMEOUT = "TIMEOUT",
   MAX_ITERATIONS_REACHED = "MAX_ITERATIONS_REACHED",
   OUT_OF_TOKENS = "OUT_OF_TOKENS",
+  FAILED = "FAILED",
+  PAUSED = "PAUSED",
+  PENDING = "PENDING",
 }
 
 // Local Cache Types

@@ -1,6 +1,7 @@
-import { showToast, Toast } from "@raycast/api";
+import { showToast, Toast, LocalStorage } from "@raycast/api";
 import { getCredentials, showCredentialsError, validateCredentials } from "../utils/credentials";
 import { clearStoredUserInfo } from "../storage/userStorage";
+import { API_ENDPOINTS, DEFAULT_API_BASE_URL } from "./constants";
 import {
   AgentRunResponse,
   UserResponse,
@@ -18,7 +19,7 @@ export class CodegenAPIClient {
 
   constructor() {
     const credentials = getCredentials();
-    this.baseUrl = credentials.apiBaseUrl || "https://api.codegen.com";
+    this.baseUrl = credentials.apiBaseUrl || DEFAULT_API_BASE_URL;
     this.apiToken = credentials.apiToken;
   }
 
@@ -46,7 +47,7 @@ export class CodegenAPIClient {
         await this.handleAPIError(response);
       }
 
-      return await response.json();
+      return await response.json() as T;
     } catch (error) {
       console.error(`API request failed for ${endpoint}:`, error);
       
@@ -62,7 +63,7 @@ export class CodegenAPIClient {
     let errorMessage = `Request failed with status ${response.status}`;
     
     try {
-      const errorData: APIError = await response.json();
+      const errorData = await response.json() as APIError;
       errorMessage = errorData.message || errorMessage;
     } catch {
       // If we can't parse the error response, use the default message
@@ -102,7 +103,7 @@ export class CodegenAPIClient {
     request: CreateAgentRunRequest
   ): Promise<AgentRunResponse> {
     return this.makeRequest<AgentRunResponse>(
-      `/v1/organizations/${organizationId}/agent/run`,
+      API_ENDPOINTS.AGENT_RUN_CREATE(organizationId),
       {
         method: "POST",
         body: JSON.stringify(request),
@@ -115,7 +116,7 @@ export class CodegenAPIClient {
     agentRunId: number
   ): Promise<AgentRunResponse> {
     return this.makeRequest<AgentRunResponse>(
-      `/v1/organizations/${organizationId}/agent/run/${agentRunId}`
+      API_ENDPOINTS.AGENT_RUN_GET(organizationId, agentRunId)
     );
   }
 
@@ -124,7 +125,7 @@ export class CodegenAPIClient {
     request: ResumeAgentRunRequest
   ): Promise<AgentRunResponse> {
     return this.makeRequest<AgentRunResponse>(
-      `/v1/beta/organizations/${organizationId}/agent/run/resume`,
+      API_ENDPOINTS.AGENT_RUN_RESUME(organizationId),
       {
         method: "POST",
         body: JSON.stringify(request),
@@ -137,7 +138,7 @@ export class CodegenAPIClient {
     request: StopAgentRunRequest
   ): Promise<AgentRunResponse> {
     return this.makeRequest<AgentRunResponse>(
-      `/v1/beta/organizations/${organizationId}/agent/run/stop`,
+      API_ENDPOINTS.AGENT_RUN_STOP(organizationId),
       {
         method: "POST",
         body: JSON.stringify(request),
@@ -151,7 +152,7 @@ export class CodegenAPIClient {
     size = 50
   ): Promise<PaginatedResponse<OrganizationResponse>> {
     return this.makeRequest<PaginatedResponse<OrganizationResponse>>(
-      `/v1/organizations?page=${page}&size=${size}`
+      API_ENDPOINTS.ORGANIZATIONS_PAGINATED(page, size)
     );
   }
 
@@ -162,7 +163,7 @@ export class CodegenAPIClient {
     size = 50
   ): Promise<PaginatedResponse<UserResponse>> {
     return this.makeRequest<PaginatedResponse<UserResponse>>(
-      `/v1/organizations/${organizationId}/users?page=${page}&size=${size}`
+      API_ENDPOINTS.ORG_USERS(organizationId, page, size)
     );
   }
 
@@ -171,7 +172,7 @@ export class CodegenAPIClient {
     userId: number
   ): Promise<UserResponse> {
     return this.makeRequest<UserResponse>(
-      `/v1/organizations/${organizationId}/users/${userId}`
+      API_ENDPOINTS.ORG_USER(organizationId, userId)
     );
   }
 
@@ -180,13 +181,13 @@ export class CodegenAPIClient {
     userId: number
   ): Promise<UserResponse> {
     return this.makeRequest<UserResponse>(
-      `/v1/organizations/${organizationId}/users/${userId}`
+      API_ENDPOINTS.ORG_USER(organizationId, userId)
     );
   }
 
   // Get current user info from alpha /me endpoint
   async getMe(): Promise<UserResponse> {
-    return this.makeRequest<UserResponse>("/v1/alpha/user/me");
+    return this.makeRequest<UserResponse>(API_ENDPOINTS.USER_ME);
   }
 
   // Validation Method
