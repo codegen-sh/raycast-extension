@@ -19,11 +19,18 @@ class UserProfileService {
   /**
    * Get the current user's profile, with caching
    */
-  async getCurrentUserProfile(organizationId: number, userId?: number): Promise<UserProfile | null> {
+  async getCurrentUserProfile(
+    organizationId: number,
+    userId?: number,
+  ): Promise<UserProfile | null> {
     try {
       // Check cache first
-      if (this.cachedProfile && this.cachedProfile.organizationId === organizationId) {
-        const cacheAge = Date.now() - new Date(this.cachedProfile.lastUpdated).getTime();
+      if (
+        this.cachedProfile &&
+        this.cachedProfile.organizationId === organizationId
+      ) {
+        const cacheAge =
+          Date.now() - new Date(this.cachedProfile.lastUpdated).getTime();
         // Cache for 1 hour
         if (cacheAge < 60 * 60 * 1000) {
           return this.cachedProfile;
@@ -45,7 +52,7 @@ class UserProfileService {
           throw new Error("No user ID provided and /me endpoint not available");
         }
       }
-      
+
       const profile: UserProfile = {
         ...userResponse,
         organizationId,
@@ -59,12 +66,12 @@ class UserProfileService {
       return profile;
     } catch (error) {
       console.error("Failed to fetch user profile:", error);
-      
+
       // Try to return cached profile even if expired
       if (this.cachedProfile) {
         return this.cachedProfile;
       }
-      
+
       return null;
     }
   }
@@ -112,12 +119,12 @@ class UserProfileService {
    */
   getFirstName(profile: UserProfile | null): string {
     const displayName = this.getDisplayName(profile);
-    
+
     // If it looks like a full name (contains space), take the first part
     if (displayName.includes(" ")) {
       return displayName.split(" ")[0];
     }
-    
+
     return displayName;
   }
 
@@ -150,33 +157,45 @@ export function getUserProfileService(): UserProfileService {
 /**
  * Convenience function to get the current user's display name
  */
-export async function getCurrentUserDisplayName(organizationId?: number, userId?: number): Promise<string> {
+export async function getCurrentUserDisplayName(
+  organizationId?: number,
+  userId?: number,
+): Promise<string> {
   const service = getUserProfileService();
-  
+
   // Try to load from cache first
   let profile = await service.loadCachedProfile();
-  
+
   // If we have org ID, try to fetch fresh data (user ID is optional)
-  if (organizationId && (!profile || profile.organizationId !== organizationId)) {
+  if (
+    organizationId &&
+    (!profile || profile.organizationId !== organizationId)
+  ) {
     profile = await service.getCurrentUserProfile(organizationId, userId);
   }
-  
+
   return service.getDisplayName(profile);
 }
 
 /**
  * Convenience function to get the current user's first name
  */
-export async function getCurrentUserFirstName(organizationId?: number, userId?: number): Promise<string> {
+export async function getCurrentUserFirstName(
+  organizationId?: number,
+  userId?: number,
+): Promise<string> {
   const service = getUserProfileService();
-  
+
   // Try to load from cache first
   let profile = await service.loadCachedProfile();
-  
+
   // If we have org ID, try to fetch fresh data (user ID is optional)
-  if (organizationId && (!profile || profile.organizationId !== organizationId)) {
+  if (
+    organizationId &&
+    (!profile || profile.organizationId !== organizationId)
+  ) {
     profile = await service.getCurrentUserProfile(organizationId, userId);
   }
-  
+
   return service.getFirstName(profile);
-} 
+}

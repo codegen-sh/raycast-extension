@@ -1,10 +1,3 @@
-// Load environment variables first
-try {
-  require('dotenv').config();
-} catch (error) {
-  console.log("dotenv loading error:", error);
-}
-
 import { useState, useEffect } from "react";
 import {
   List,
@@ -15,9 +8,7 @@ import {
   Toast,
   LocalStorage,
 } from "@raycast/api";
-import { getAPIClient } from "./api/client";
 import { validateCredentials, hasCredentials } from "./utils/credentials";
-import { OrganizationResponse } from "./api/types";
 import { useCurrentUser } from "./hooks/useCurrentUser";
 
 // Type for organizations from validation (simplified structure)
@@ -32,14 +23,15 @@ export default function ListOrganizations() {
   const [error, setError] = useState<string | null>(null);
   const [defaultOrgId, setDefaultOrgId] = useState<number | null>(null);
 
-  const apiClient = getAPIClient();
   const { displayName: userDisplayName } = useCurrentUser();
 
   // Load organizations and default org preference
   useEffect(() => {
     async function loadData() {
       if (!hasCredentials()) {
-        setError("API token not configured. Please set it in extension preferences.");
+        setError(
+          "API token not configured. Please set it in extension preferences.",
+        );
         setIsLoading(false);
         return;
       }
@@ -58,12 +50,16 @@ export default function ListOrganizations() {
         }
 
         // Load default organization preference
-        const defaultOrg = await LocalStorage.getItem<string>("defaultOrganizationId");
+        const defaultOrg = await LocalStorage.getItem<string>(
+          "defaultOrganizationId",
+        );
         if (defaultOrg) {
           setDefaultOrgId(parseInt(defaultOrg, 10));
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load organizations");
+        setError(
+          err instanceof Error ? err.message : "Failed to load organizations",
+        );
       } finally {
         setIsLoading(false);
       }
@@ -75,20 +71,23 @@ export default function ListOrganizations() {
   // Set default organization
   const setDefaultOrganization = async (orgId: number) => {
     try {
-      const selectedOrg = organizations.find(org => org.id === orgId);
-      
+      const selectedOrg = organizations.find((org) => org.id === orgId);
+
       // Store both the ID and the full organization data
       await LocalStorage.setItem("defaultOrganizationId", orgId.toString());
       if (selectedOrg) {
-        await LocalStorage.setItem("defaultOrganization", JSON.stringify(selectedOrg));
+        await LocalStorage.setItem(
+          "defaultOrganization",
+          JSON.stringify(selectedOrg),
+        );
       }
-      
+
       setDefaultOrgId(orgId);
-      
+
       await showToast({
         style: Toast.Style.Success,
         title: "Default Organization Set",
-        message: `${selectedOrg?.name || 'Organization'} will be used as default for new agent runs`,
+        message: `${selectedOrg?.name || "Organization"} will be used as default for new agent runs`,
       });
     } catch (error) {
       await showToast({
@@ -105,7 +104,7 @@ export default function ListOrganizations() {
       await LocalStorage.removeItem("defaultOrganizationId");
       await LocalStorage.removeItem("defaultOrganization");
       setDefaultOrgId(null);
-      
+
       await showToast({
         style: Toast.Style.Success,
         title: "Default Organization Cleared",
@@ -133,7 +132,9 @@ export default function ListOrganizations() {
         setError(validation.error || "Failed to load organizations");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to refresh organizations");
+      setError(
+        err instanceof Error ? err.message : "Failed to refresh organizations",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -160,11 +161,13 @@ export default function ListOrganizations() {
     );
   }
 
-  const navigationTitle = userDisplayName ? `Organizations - ${userDisplayName}` : "Organizations";
+  const navigationTitle = userDisplayName
+    ? `Organizations - ${userDisplayName}`
+    : "Organizations";
 
   return (
-    <List 
-      isLoading={isLoading} 
+    <List
+      isLoading={isLoading}
       searchBarPlaceholder="Search organizations..."
       navigationTitle={navigationTitle}
     >
@@ -175,20 +178,28 @@ export default function ListOrganizations() {
           description="You don't have access to any organizations"
           actions={
             <ActionPanel>
-              <Action title="Refresh" icon={Icon.ArrowClockwise} onAction={refresh} />
+              <Action
+                title="Refresh"
+                icon={Icon.ArrowClockwise}
+                onAction={refresh}
+              />
             </ActionPanel>
           }
         />
       ) : (
         organizations.map((org) => {
           const isDefault = defaultOrgId === org.id;
-          
+
           return (
             <List.Item
               key={org.id}
               title={org.name}
               subtitle={`Organization ID: ${org.id}`}
-              icon={isDefault ? { source: Icon.Star, tintColor: "#FFD700" } : Icon.Building}
+              icon={
+                isDefault
+                  ? { source: Icon.Star, tintColor: "#FFD700" }
+                  : Icon.Building
+              }
               accessories={[
                 ...(isDefault ? [{ text: "Default", icon: Icon.Star }] : []),
               ]}
@@ -214,7 +225,7 @@ export default function ListOrganizations() {
 
                   <ActionPanel.Section>
                     <Action.CopyToClipboard
-                      title="Copy Organization ID"
+                      title="Copy Organization Id"
                       content={org.id.toString()}
                       shortcut={{ modifiers: ["cmd"], key: "c" }}
                     />

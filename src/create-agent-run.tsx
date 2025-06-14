@@ -9,13 +9,11 @@ import {
   getPreferenceValues,
   Clipboard,
   Icon,
-  Color,
   LocalStorage,
 } from "@raycast/api";
-import { getCurrentUserFirstName } from "./utils/userProfile";
 import { getAPIClient } from "./api/client";
 import { getAgentRunCache } from "./storage/agentRunCache";
-import { validateCredentials, hasCredentials, getCredentials } from "./utils/credentials";
+import { validateCredentials, hasCredentials } from "./utils/credentials";
 import { OrganizationResponse } from "./api/types";
 import { useCachedAgentRuns } from "./hooks/useCachedAgentRuns";
 import { getBackgroundMonitoringService } from "./utils/backgroundMonitoring";
@@ -34,10 +32,11 @@ interface Preferences {
 export default function CreateAgentRun() {
   const { pop } = useNavigation();
   const [isLoading, setIsLoading] = useState(false);
-  const [organizations, setOrganizations] = useState<OrganizationResponse[]>([]);
+  const [organizations, setOrganizations] = useState<OrganizationResponse[]>(
+    [],
+  );
   const [isLoadingOrgs, setIsLoadingOrgs] = useState(true);
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [userFirstName, setUserFirstName] = useState<string>("User");
   const [defaultOrgId, setDefaultOrgId] = useState<string | null>(null);
   const { refresh } = useCachedAgentRuns();
 
@@ -50,11 +49,12 @@ export default function CreateAgentRun() {
   // Create welcome message using full name or GitHub username
   const getWelcomeMessage = () => {
     if (!userInfo) return "Welcome! 👋";
-    
-    const name = userInfo.full_name || 
-                 (userInfo.github_username ? userInfo.github_username : null) ||
-                 "there";
-    
+
+    const name =
+      userInfo.full_name ||
+      (userInfo.github_username ? userInfo.github_username : null) ||
+      "there";
+
     return `Welcome, ${name}! 👋`;
   };
 
@@ -62,29 +62,39 @@ export default function CreateAgentRun() {
   useEffect(() => {
     async function initialize() {
       if (!hasCredentials()) {
-        setValidationError("API token not configured. Please set it in extension preferences.");
+        setValidationError(
+          "API token not configured. Please set it in extension preferences.",
+        );
         setIsLoadingOrgs(false);
         return;
       }
 
       try {
         // Load cached organizations and default from local storage
-        const cachedDefaultOrgId = await LocalStorage.getItem<string>("defaultOrganizationId");
-        const cachedDefaultOrg = await LocalStorage.getItem<string>("defaultOrganization");
-        
+        const cachedDefaultOrgId = await LocalStorage.getItem<string>(
+          "defaultOrganizationId",
+        );
+        const cachedDefaultOrg = await LocalStorage.getItem<string>(
+          "defaultOrganization",
+        );
+
         if (cachedDefaultOrgId) {
           setDefaultOrgId(cachedDefaultOrgId);
         }
-        
+
         // Use cached default organization if available
         if (cachedDefaultOrg) {
           try {
-            const defaultOrg: OrganizationResponse = JSON.parse(cachedDefaultOrg);
+            const defaultOrg: OrganizationResponse =
+              JSON.parse(cachedDefaultOrg);
             if (defaultOrg.id && defaultOrg.name && defaultOrg.settings) {
               setOrganizations([defaultOrg]);
             }
           } catch (parseError) {
-            console.log("Could not parse cached default organization:", parseError);
+            console.log(
+              "Could not parse cached default organization:",
+              parseError,
+            );
           }
         }
 
@@ -95,14 +105,14 @@ export default function CreateAgentRun() {
           setIsLoadingOrgs(false);
           return;
         }
-          
+
         // TODO: Re-enable user profile fetching later
         // Try to get user's first name for personalization
         // try {
         //   const credentials = getCredentials();
         //   const firstOrgId = validation.organizations[0]?.id;
         //   const userId = credentials.userId ? parseInt(credentials.userId, 10) : undefined;
-        //   
+        //
         //   if (firstOrgId) {
         //     const firstName = await getCurrentUserFirstName(firstOrgId, userId);
         //     setUserFirstName(firstName);
@@ -112,7 +122,11 @@ export default function CreateAgentRun() {
         //   // Keep default "User" name
         // }
       } catch (error) {
-        setValidationError(error instanceof Error ? error.message : "Failed to validate credentials");
+        setValidationError(
+          error instanceof Error
+            ? error.message
+            : "Failed to validate credentials",
+        );
       } finally {
         setIsLoadingOrgs(false);
       }
@@ -134,7 +148,7 @@ export default function CreateAgentRun() {
     if (!values.organizationId) {
       await showToast({
         style: Toast.Style.Failure,
-        title: "Choose an organization", 
+        title: "Choose an organization",
         message: "I need to know which organization to create this in",
       });
       return;
@@ -193,11 +207,12 @@ export default function CreateAgentRun() {
       pop();
     } catch (error) {
       console.error("Failed to create agent run:", error);
-      
+
       await showToast({
         style: Toast.Style.Failure,
         title: "Oops, something went wrong",
-        message: error instanceof Error ? error.message : "Let's try that again",
+        message:
+          error instanceof Error ? error.message : "Let's try that again",
       });
     } finally {
       setIsLoading(false);
@@ -211,7 +226,7 @@ export default function CreateAgentRun() {
         actions={
           <ActionPanel>
             <Action.OpenInBrowser
-              title="Configure API Token"
+              title="Configure Api Token"
               url="raycast://extensions/codegen/codegen"
               icon={Icon.Gear}
             />
@@ -222,10 +237,7 @@ export default function CreateAgentRun() {
           title=""
           text="I need your API token to get started. Once you add it, we can build some amazing things together!"
         />
-        <Form.Description
-          title=""
-          text={validationError}
-        />
+        <Form.Description title="" text={validationError} />
       </Form>
     );
   }
@@ -269,11 +281,8 @@ export default function CreateAgentRun() {
         </ActionPanel>
       }
     >
-      <Form.Description
-        title=""
-        text={getWelcomeMessage()}
-      />
-      
+      <Form.Description title="" text={getWelcomeMessage()} />
+
       <Form.TextArea
         id="prompt"
         title=""
@@ -285,7 +294,6 @@ export default function CreateAgentRun() {
         title=""
         label="Include what's on my clipboard for context"
       />
-
 
       <Form.Dropdown
         id="organizationId"

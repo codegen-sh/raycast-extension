@@ -1,32 +1,37 @@
-import { AgentRunResponse, AgentRunStatus, AgentRunFilters, SortOptions } from "../api/types";
+import {
+  AgentRunResponse,
+  AgentRunStatus,
+  AgentRunFilters,
+  SortOptions,
+} from "../api/types";
 
 /**
  * Filter agent runs based on provided criteria
  */
 export function filterAgentRuns(
   runs: AgentRunResponse[],
-  filters: AgentRunFilters
+  filters: AgentRunFilters,
 ): AgentRunResponse[] {
   let filteredRuns = [...runs];
 
   // Filter by status
   if (filters.status && filters.status.length > 0) {
-    filteredRuns = filteredRuns.filter(run => 
-      filters.status!.includes(run.status as AgentRunStatus)
+    filteredRuns = filteredRuns.filter((run) =>
+      filters.status!.includes(run.status as AgentRunStatus),
     );
   }
 
   // Filter by organization
   if (filters.organizationId) {
-    filteredRuns = filteredRuns.filter(run => 
-      run.organization_id === filters.organizationId
+    filteredRuns = filteredRuns.filter(
+      (run) => run.organization_id === filters.organizationId,
     );
   }
 
   // Filter by date range
   if (filters.dateRange) {
     const { start, end } = filters.dateRange;
-    filteredRuns = filteredRuns.filter(run => {
+    filteredRuns = filteredRuns.filter((run) => {
       const runDate = new Date(run.created_at);
       return runDate >= start && runDate <= end;
     });
@@ -35,9 +40,7 @@ export function filterAgentRuns(
   // Filter by search query
   if (filters.searchQuery && filters.searchQuery.trim()) {
     const query = filters.searchQuery.toLowerCase().trim();
-    filteredRuns = filteredRuns.filter(run => 
-      searchInAgentRun(run, query)
-    );
+    filteredRuns = filteredRuns.filter((run) => searchInAgentRun(run, query));
   }
 
   return filteredRuns;
@@ -46,13 +49,18 @@ export function filterAgentRuns(
 /**
  * Search within an agent run for a query string
  */
-export function searchInAgentRun(run: AgentRunResponse, query: string): boolean {
+export function searchInAgentRun(
+  run: AgentRunResponse,
+  query: string,
+): boolean {
   const searchableText = [
     run.id.toString(),
     run.status.toLowerCase(),
     run.result || "",
     // Add more searchable fields as needed
-  ].join(" ").toLowerCase();
+  ]
+    .join(" ")
+    .toLowerCase();
 
   return searchableText.includes(query);
 }
@@ -62,7 +70,7 @@ export function searchInAgentRun(run: AgentRunResponse, query: string): boolean 
  */
 export function sortAgentRuns(
   runs: AgentRunResponse[],
-  sortOptions: SortOptions
+  sortOptions: SortOptions,
 ): AgentRunResponse[] {
   const sortedRuns = [...runs];
 
@@ -71,7 +79,8 @@ export function sortAgentRuns(
 
     switch (sortOptions.field) {
       case "created_at":
-        comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        comparison =
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
         break;
       case "status":
         comparison = a.status.localeCompare(b.status);
@@ -97,20 +106,20 @@ export function getDateRanges(): Record<string, { start: Date; end: Date }> {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
-  
+
   const thisWeekStart = new Date(today);
   thisWeekStart.setDate(today.getDate() - today.getDay());
-  
+
   const lastWeekStart = new Date(thisWeekStart);
   lastWeekStart.setDate(thisWeekStart.getDate() - 7);
   const lastWeekEnd = new Date(thisWeekStart);
   lastWeekEnd.setDate(thisWeekStart.getDate() - 1);
-  
+
   const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  
+
   const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
-  
+
   const last30Days = new Date(today);
   last30Days.setDate(today.getDate() - 30);
 
@@ -129,17 +138,20 @@ export function getDateRanges(): Record<string, { start: Date; end: Date }> {
  * Get status filter options with counts
  */
 export function getStatusFilterOptions(
-  runs: AgentRunResponse[]
+  runs: AgentRunResponse[],
 ): Array<{ status: AgentRunStatus; count: number; label: string }> {
-  const statusCounts = runs.reduce((acc, run) => {
-    const status = run.status as AgentRunStatus;
-    acc[status] = (acc[status] || 0) + 1;
-    return acc;
-  }, {} as Record<AgentRunStatus, number>);
+  const statusCounts = runs.reduce(
+    (acc, run) => {
+      const status = run.status as AgentRunStatus;
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    },
+    {} as Record<AgentRunStatus, number>,
+  );
 
   const statusLabels: Record<AgentRunStatus, string> = {
     [AgentRunStatus.ACTIVE]: "Active",
-    [AgentRunStatus.COMPLETE]: "Complete", 
+    [AgentRunStatus.COMPLETE]: "Complete",
     [AgentRunStatus.FAILED]: "Failed",
     [AgentRunStatus.PAUSED]: "Paused",
     [AgentRunStatus.PENDING]: "Pending",
@@ -176,7 +188,7 @@ export function getFilterSummary(filters: AgentRunFilters): string {
     const { start, end } = filters.dateRange;
     const startStr = start.toLocaleDateString();
     const endStr = end.toLocaleDateString();
-    
+
     if (startStr === endStr) {
       parts.push(`Date: ${startStr}`);
     } else {
@@ -213,15 +225,14 @@ export function clearFilters(): AgentRunFilters {
 /**
  * Debounce function for search input
  */
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: never[]) => unknown>(
   func: T,
-  wait: number
+  wait: number,
 ): (...args: Parameters<T>) => void {
   let timeout: NodeJS.Timeout;
-  
+
   return (...args: Parameters<T>) => {
     clearTimeout(timeout);
     timeout = setTimeout(() => func(...args), wait);
   };
 }
-

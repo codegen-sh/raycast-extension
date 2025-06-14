@@ -1,9 +1,14 @@
-import { AgentRunResponse, OrganizationResponse, UserResponse, TrackedAgentRun, AgentRunStatusChange } from "../api/types";
+import {
+  AgentRunResponse,
+  OrganizationResponse,
+  UserResponse,
+  TrackedAgentRun,
+} from "../api/types";
 
 // Cache Keys
 export const CACHE_KEYS = {
   AGENT_RUNS: "agent-runs",
-  ORGANIZATIONS: "organizations", 
+  ORGANIZATIONS: "organizations",
   USERS: "users",
   METADATA: "metadata",
   TRACKED_RUNS: "tracked-runs",
@@ -30,7 +35,8 @@ export interface AgentRunCacheEntry extends CacheEntry<AgentRunResponse> {
   lastPolled?: string;
 }
 
-export interface OrganizationCacheEntry extends CacheEntry<OrganizationResponse> {
+export interface OrganizationCacheEntry
+  extends CacheEntry<OrganizationResponse> {
   isDefault?: boolean;
 }
 

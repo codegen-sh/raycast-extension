@@ -14,17 +14,14 @@ import {
 import { useCachedAgentRuns } from "./hooks/useCachedAgentRuns";
 import { getAPIClient } from "./api/client";
 import { getAgentRunCache } from "./storage/agentRunCache";
-import { AgentRunStatus, AgentRunFilters } from "./api/types";
-import { getDateRanges, getStatusFilterOptions, hasActiveFilters, clearFilters } from "./utils/filtering";
-import { SyncStatus } from "./storage/cacheTypes";
+import { AgentRunStatus } from "./api/types";
+import { hasActiveFilters, clearFilters } from "./utils/filtering";
 
 export default function ListAgentRuns() {
   const {
     filteredRuns,
     isLoading,
-    isRefreshing,
     error,
-    syncStatus,
     refresh,
     updateFilters,
     filters,
@@ -81,7 +78,7 @@ export default function ListAgentRuns() {
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
-    
+
     return date.toLocaleDateString();
   };
 
@@ -101,8 +98,10 @@ export default function ListAgentRuns() {
     if (!confirmed) return;
 
     try {
-      await apiClient.stopAgentRun(organizationId, { agent_run_id: agentRunId });
-      
+      await apiClient.stopAgentRun(organizationId, {
+        agent_run_id: agentRunId,
+      });
+
       await showToast({
         style: Toast.Style.Success,
         title: "Agent Run Stopped",
@@ -156,16 +155,16 @@ export default function ListAgentRuns() {
       // Check clipboard for potential agent run ID or URL
       const clipboardText = await Clipboard.readText();
       let suggestedInput = "";
-      
+
       if (clipboardText) {
         console.log("🔍 Checking clipboard for agent run:", clipboardText);
-        
+
         // Try multiple URL patterns to extract agent run ID
         const urlPatterns = [
-          /codegen\.com\/agent\/trace\/(\d+)/,           // Original pattern
+          /codegen\.com\/agent\/trace\/(\d+)/, // Original pattern
           /chadcode\.sh\/agent\/trace\/(\d+)/,
         ];
-        
+
         // Try each pattern
         for (const pattern of urlPatterns) {
           const match = clipboardText.match(pattern);
@@ -175,7 +174,7 @@ export default function ListAgentRuns() {
             break;
           }
         }
-        
+
         // If no URL match, check if it's just a number
         if (!suggestedInput && /^\d+$/.test(clipboardText.trim())) {
           suggestedInput = clipboardText.trim();
@@ -184,13 +183,15 @@ export default function ListAgentRuns() {
       }
 
       // Show instructions based on whether we found something useful in clipboard
-      const instructions = suggestedInput 
+      const instructions = suggestedInput
         ? `Found agent run ID ${suggestedInput} in clipboard. Press Enter to add it, or replace with a different ID/URL.`
         : "Copy an agent run ID or Codegen URL to your clipboard first, then try again.";
 
       await showToast({
         style: suggestedInput ? Toast.Style.Success : Toast.Style.Failure,
-        title: suggestedInput ? `Add Agent Run #${suggestedInput}?` : "Copy Agent Run ID First",
+        title: suggestedInput
+          ? `Add Agent Run #${suggestedInput}?`
+          : "Copy Agent Run ID First",
         message: instructions,
       });
 
@@ -207,7 +208,7 @@ export default function ListAgentRuns() {
 
       // Fetch the agent run from the API
       const agentRun = await apiClient.getAgentRun(organizationId, agentRunId);
-      
+
       // Add to cache and tracking
       await cache.updateAgentRun(organizationId, agentRun);
       await cache.addToTracking(organizationId, agentRun);
@@ -220,12 +221,14 @@ export default function ListAgentRuns() {
 
       // Refresh to show the new agent run
       await refresh();
-
     } catch (error) {
       await showToast({
         style: Toast.Style.Failure,
         title: "Failed to Add Agent Run",
-        message: error instanceof Error ? error.message : "Could not fetch or add the agent run",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Could not fetch or add the agent run",
       });
     }
   };
@@ -248,7 +251,7 @@ export default function ListAgentRuns() {
     try {
       // Remove from cache
       await cache.removeAgentRun(organizationId, agentRunId);
-      
+
       await showToast({
         style: Toast.Style.Success,
         title: "Agent Run Deleted",
@@ -276,27 +279,13 @@ export default function ListAgentRuns() {
   const filterByStatus = (status: AgentRunStatus) => {
     const currentStatuses = filters.status || [];
     const newStatuses = currentStatuses.includes(status)
-      ? currentStatuses.filter(s => s !== status)
+      ? currentStatuses.filter((s) => s !== status)
       : [...currentStatuses, status];
-    
+
     updateFilters({
       ...filters,
       status: newStatuses.length > 0 ? newStatuses : undefined,
     });
-  };
-
-  // Get sync status display
-  const getSyncStatusAccessory = () => {
-    switch (syncStatus) {
-      case SyncStatus.SYNCING:
-        return { icon: Icon.ArrowClockwise, tooltip: "Syncing..." };
-      case SyncStatus.ERROR:
-        return { icon: Icon.ExclamationMark, tooltip: "Sync failed" };
-      case SyncStatus.SUCCESS:
-        return { icon: Icon.CheckCircle, tooltip: "Synced" };
-      default:
-        return undefined;
-    }
   };
 
   if (error && !isLoading) {
@@ -351,7 +340,11 @@ export default function ListAgentRuns() {
       {filteredRuns.length === 0 && !isLoading ? (
         <List.EmptyView
           icon={Icon.Rocket}
-          title={hasActiveFilters(filters) ? "No Matching Agent Runs" : "No Agent Runs"}
+          title={
+            hasActiveFilters(filters)
+              ? "No Matching Agent Runs"
+              : "No Agent Runs"
+          }
           description={
             hasActiveFilters(filters)
               ? "Try adjusting your search or filters"
@@ -377,7 +370,11 @@ export default function ListAgentRuns() {
                   onAction={handleClearFilters}
                 />
               )}
-              <Action title="Refresh" icon={Icon.ArrowClockwise} onAction={refresh} />
+              <Action
+                title="Refresh"
+                icon={Icon.ArrowClockwise}
+                onAction={refresh}
+              />
             </ActionPanel>
           }
         />
@@ -392,10 +389,11 @@ export default function ListAgentRuns() {
               key={run.id}
               title={`Agent Run #${run.id}`}
               subtitle={`Created ${formatDate(run.created_at)}`}
-              icon={{ source: statusDisplay.icon, tintColor: statusDisplay.color }}
-              accessories={[
-                { text: run.status },
-              ]}
+              icon={{
+                source: statusDisplay.icon,
+                tintColor: statusDisplay.color,
+              }}
+              accessories={[{ text: run.status }]}
               actions={
                 <ActionPanel>
                   <ActionPanel.Section>

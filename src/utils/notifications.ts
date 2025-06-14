@@ -3,7 +3,10 @@ import { AgentRunStatusChange, AgentRunStatus } from "../api/types";
 
 export interface NotificationManager {
   notifyStatusChange(change: AgentRunStatusChange): Promise<void>;
-  notifyAgentRunCreated(agentRunId: number, organizationId: number): Promise<void>;
+  notifyAgentRunCreated(
+    agentRunId: number,
+    organizationId: number,
+  ): Promise<void>;
   initialize(): Promise<void>;
   testNotification(): Promise<void>;
 }
@@ -26,18 +29,19 @@ class RaycastNotificationManager implements NotificationManager {
 
   async notifyStatusChange(change: AgentRunStatusChange): Promise<void> {
     const { agentRunId, oldStatus, newStatus, webUrl } = change;
-    
-    console.log(`Processing status change notification for agent run ${agentRunId}: ${oldStatus} -> ${newStatus}`);
-    
-    // Determine notification style based on status
-    const { title, message, style, shouldNotify } = this.getStatusChangeNotification(
-      agentRunId,
-      oldStatus,
-      newStatus
+
+    console.log(
+      `Processing status change notification for agent run ${agentRunId}: ${oldStatus} -> ${newStatus}`,
     );
 
+    // Determine notification style based on status
+    const { title, message, style, shouldNotify } =
+      this.getStatusChangeNotification(agentRunId, oldStatus, newStatus);
+
     if (!shouldNotify) {
-      console.log(`Skipping notification for agent run ${agentRunId}: ${oldStatus} -> ${newStatus} (shouldNotify=false)`);
+      console.log(
+        `Skipping notification for agent run ${agentRunId}: ${oldStatus} -> ${newStatus} (shouldNotify=false)`,
+      );
       return;
     }
 
@@ -54,37 +58,49 @@ class RaycastNotificationManager implements NotificationManager {
             onAction: () => {
               // We could implement opening the web URL here if needed
               console.log(`Would open: ${webUrl}`);
-            }
-          }
-        })
+            },
+          },
+        }),
       });
-      
-      console.log(`✅ Toast notification sent successfully for agent run ${agentRunId}: ${oldStatus} -> ${newStatus}`);
-      
+
+      console.log(
+        `✅ Toast notification sent successfully for agent run ${agentRunId}: ${oldStatus} -> ${newStatus}`,
+      );
     } catch (error) {
-      console.error(`❌ Failed to send toast notification for agent run ${agentRunId}:`, error);
-      
+      console.error(
+        `❌ Failed to send toast notification for agent run ${agentRunId}:`,
+        error,
+      );
+
       // Fallback to HUD notification
       try {
         await showHUD(title);
-        console.log(`✅ HUD fallback notification sent for agent run ${agentRunId}`);
+        console.log(
+          `✅ HUD fallback notification sent for agent run ${agentRunId}`,
+        );
       } catch (hudError) {
-        console.error(`❌ Failed to send HUD notification for agent run ${agentRunId}:`, hudError);
+        console.error(
+          `❌ Failed to send HUD notification for agent run ${agentRunId}:`,
+          hudError,
+        );
       }
     }
   }
 
-  async notifyAgentRunCreated(agentRunId: number, organizationId: number): Promise<void> {
+  async notifyAgentRunCreated(agentRunId: number): Promise<void> {
     try {
       await showToast({
         style: Toast.Style.Success,
         title: `Agent Run #${agentRunId} • Started`,
-        message: "🚀 Your agent run has been created and is now being tracked"
+        message: "🚀 Your agent run has been created and is now being tracked",
       });
       console.log(`✅ Creation notification sent for agent run ${agentRunId}`);
     } catch (error) {
-      console.error(`❌ Failed to send creation notification for agent run ${agentRunId}:`, error);
-      
+      console.error(
+        `❌ Failed to send creation notification for agent run ${agentRunId}:`,
+        error,
+      );
+
       // Fallback to HUD
       try {
         await showHUD(`🚀 Agent run #${agentRunId} started`);
@@ -97,7 +113,7 @@ class RaycastNotificationManager implements NotificationManager {
   private getStatusChangeNotification(
     agentRunId: number,
     oldStatus: string | null,
-    newStatus: string
+    newStatus: string,
   ): {
     title: string;
     message: string;
@@ -125,7 +141,7 @@ class RaycastNotificationManager implements NotificationManager {
     }
 
     const baseTitle = `Agent Run #${agentRunId}`;
-    
+
     switch (newStatus) {
       case AgentRunStatus.COMPLETE:
         return {
@@ -207,12 +223,12 @@ class RaycastNotificationManager implements NotificationManager {
    */
   async testNotification(): Promise<void> {
     console.log("🧪 Testing notification system...");
-    
+
     try {
       await showToast({
         style: Toast.Style.Success,
         title: "🧪 Test Notification",
-        message: "This is a test notification from Codegen"
+        message: "This is a test notification from Codegen",
       });
       console.log("✅ Test notification sent successfully");
     } catch (error) {

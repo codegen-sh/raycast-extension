@@ -53,21 +53,26 @@ class BackgroundMonitoringService {
 
       // Get all organizations with tracked runs
       const trackedOrganizations = await cache.getTrackedOrganizations();
-      
+
       if (trackedOrganizations.length === 0) {
         return; // No organizations to monitor
       }
 
-      console.log(`Monitoring ${trackedOrganizations.length} organizations for status changes`);
+      console.log(
+        `Monitoring ${trackedOrganizations.length} organizations for status changes`,
+      );
 
       // Check each organization for status changes
       for (const organizationId of trackedOrganizations) {
         try {
-          const statusChanges = await cache.checkForStatusChanges(organizationId);
-          
+          const statusChanges =
+            await cache.checkForStatusChanges(organizationId);
+
           if (statusChanges.length > 0) {
-            console.log(`Found ${statusChanges.length} status changes for org ${organizationId}`);
-            
+            console.log(
+              `Found ${statusChanges.length} status changes for org ${organizationId}`,
+            );
+
             // Send notifications for each status change
             for (const change of statusChanges) {
               await notificationManager.notifyStatusChange(change);
@@ -76,13 +81,14 @@ class BackgroundMonitoringService {
 
           // Cleanup completed runs (optional, runs once per check)
           await cache.cleanupCompletedRuns(organizationId);
-          
         } catch (error) {
-          console.error(`Error monitoring organization ${organizationId}:`, error);
+          console.error(
+            `Error monitoring organization ${organizationId}:`,
+            error,
+          );
           // Continue with other organizations even if one fails
         }
       }
-
     } catch (error) {
       console.error("Error in background monitoring:", error);
     }
@@ -104,4 +110,4 @@ export function getBackgroundMonitoringService(): BackgroundMonitoringService {
     backgroundMonitoringService = new BackgroundMonitoringService();
   }
   return backgroundMonitoringService;
-} 
+}

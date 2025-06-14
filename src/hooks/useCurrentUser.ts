@@ -23,10 +23,10 @@ export function useCurrentUser(): UseCurrentUserResult {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const info = await getCurrentUserInfo();
       setUserInfo(info);
-      
+
       if (!info) {
         setError("Failed to fetch user information");
       }
