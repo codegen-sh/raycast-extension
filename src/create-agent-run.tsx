@@ -20,6 +20,7 @@ import { OrganizationResponse } from "./api/types";
 import { useCachedAgentRuns } from "./hooks/useCachedAgentRuns";
 import { getBackgroundMonitoringService } from "./utils/backgroundMonitoring";
 import { useCurrentUser } from "./hooks/useCurrentUser";
+import AboutCommand from "./about";
 
 interface FormValues {
   prompt: string;
@@ -214,6 +215,12 @@ export default function CreateAgentRun() {
               title="Configure API Token"
               url="raycast://extensions/codegen/codegen"
               icon={Icon.Gear}
+            />
+            <Action.Push
+              title="About this Extension"
+              icon={Icon.Info}
+              target={<AboutCommand />}
+              shortcut={{ modifiers: ["cmd"], key: "i" }}
             />
           </ActionPanel>
         }

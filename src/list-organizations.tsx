@@ -18,6 +18,7 @@ import {
 import { getAPIClient } from "./api/client";
 import { validateCredentials, hasCredentials } from "./utils/credentials";
 import { OrganizationResponse } from "./api/types";
+import AboutCommand from "./about";
 import { useCurrentUser } from "./hooks/useCurrentUser";
 
 // Type for organizations from validation (simplified structure)
@@ -231,6 +232,12 @@ export default function ListOrganizations() {
                       icon={Icon.ArrowClockwise}
                       onAction={refresh}
                       shortcut={{ modifiers: ["cmd"], key: "r" }}
+                    />
+                    <Action.Push
+                      title="About this Extension"
+                      icon={Icon.Info}
+                      target={<AboutCommand />}
+                      shortcut={{ modifiers: ["cmd"], key: "i" }}
                     />
                   </ActionPanel.Section>
                 </ActionPanel>

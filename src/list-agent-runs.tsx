@@ -17,6 +17,7 @@ import { getAgentRunCache } from "./storage/agentRunCache";
 import { AgentRunStatus, AgentRunFilters } from "./api/types";
 import { getDateRanges, getStatusFilterOptions, hasActiveFilters, clearFilters } from "./utils/filtering";
 import { SyncStatus } from "./storage/cacheTypes";
+import AboutCommand from "./about";
 
 export default function ListAgentRuns() {
   const {
@@ -378,6 +379,12 @@ export default function ListAgentRuns() {
                 />
               )}
               <Action title="Refresh" icon={Icon.ArrowClockwise} onAction={refresh} />
+              <Action.Push
+                title="About this Extension"
+                icon={Icon.Info}
+                target={<AboutCommand />}
+                shortcut={{ modifiers: ["cmd"], key: "i" }}
+              />
             </ActionPanel>
           }
         />

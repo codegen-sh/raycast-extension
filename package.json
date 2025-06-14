@@ -51,6 +51,20 @@
         "switch",
         "teams"
       ]
+    },
+    {
+      "name": "about",
+      "title": "About this Extension",
+      "subtitle": "Codegen",
+      "description": "Learn about the Codegen extension and get help",
+      "mode": "view",
+      "keywords": [
+        "about",
+        "help",
+        "info",
+        "support",
+        "documentation"
+      ]
     }
   ],
   "preferences": [
