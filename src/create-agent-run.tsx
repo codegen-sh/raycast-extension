@@ -216,12 +216,6 @@ export default function CreateAgentRun() {
               url="raycast://extensions/codegen/codegen"
               icon={Icon.Gear}
             />
-            <Action.Push
-              title="About this Extension"
-              icon={Icon.Info}
-              target={<AboutCommand />}
-              shortcut={{ modifiers: ["cmd"], key: "i" }}
-            />
           </ActionPanel>
         }
       >
