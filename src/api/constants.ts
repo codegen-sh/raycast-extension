@@ -2,7 +2,7 @@
 
 export const API_ENDPOINTS = {
   // User endpoints
-  USER_ME: "/v1/alpha/user/me",
+  USER_ME: "/v1/users/me",
   
   // Organization endpoints
   ORGANIZATIONS: "/v1/organizations",
