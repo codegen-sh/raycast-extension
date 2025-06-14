@@ -89,7 +89,7 @@
   ],
   "dependencies": {
     "@raycast/api": "^1.83.1",
-    "@raycast/utils": "^1.17.0",
+    "@raycast/utils": "^2.0.0",
     "dotenv": "^16.5.0"
   },
   "devDependencies": {
