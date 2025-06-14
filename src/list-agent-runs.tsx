@@ -17,6 +17,7 @@ import { getAgentRunCache } from "./storage/agentRunCache";
 import { AgentRunStatus, AgentRunFilters } from "./api/types";
 import { getDateRanges, getStatusFilterOptions, hasActiveFilters, clearFilters } from "./utils/filtering";
 import { SyncStatus } from "./storage/cacheTypes";
+import { WelcomeScreen } from "./components/WelcomeScreen";
 
 export default function ListAgentRuns() {
   const {
@@ -300,6 +301,11 @@ export default function ListAgentRuns() {
   };
 
   if (error && !isLoading) {
+    // Show welcome screen for credential errors, otherwise show error view
+    if (error.includes("Authentication failed") || error.includes("Invalid API token") || error.includes("Access denied")) {
+      return <WelcomeScreen commandName="Agent Runs" />;
+    }
+    
     return (
       <List>
         <List.EmptyView

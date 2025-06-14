@@ -19,6 +19,7 @@ import { getAPIClient } from "./api/client";
 import { validateCredentials, hasCredentials } from "./utils/credentials";
 import { OrganizationResponse } from "./api/types";
 import { useCurrentUser } from "./hooks/useCurrentUser";
+import { WelcomeScreen } from "./components/WelcomeScreen";
 
 // Type for organizations from validation (simplified structure)
 type BasicOrganization = {
@@ -140,6 +141,11 @@ export default function ListOrganizations() {
   };
 
   if (error && !isLoading) {
+    // Show welcome screen for credential errors, otherwise show error view
+    if (error.includes("API token not configured") || error.includes("Invalid credentials")) {
+      return <WelcomeScreen commandName="Organizations" />;
+    }
+    
     return (
       <List>
         <List.EmptyView

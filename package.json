@@ -57,7 +57,7 @@
     {
       "name": "apiToken",
       "type": "password",
-      "required": true,
+      "required": false,
       "title": "API Token",
       "description": "Your Codegen API token. Get it from https://app.codegen.com/settings",
       "placeholder": "Enter your API token"

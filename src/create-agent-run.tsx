@@ -20,6 +20,7 @@ import { OrganizationResponse } from "./api/types";
 import { useCachedAgentRuns } from "./hooks/useCachedAgentRuns";
 import { getBackgroundMonitoringService } from "./utils/backgroundMonitoring";
 import { useCurrentUser } from "./hooks/useCurrentUser";
+import { WelcomeScreen } from "./components/WelcomeScreen";
 
 interface FormValues {
   prompt: string;
@@ -205,29 +206,7 @@ export default function CreateAgentRun() {
   }
 
   if (validationError) {
-    return (
-      <Form
-        navigationTitle="Let's get you set up"
-        actions={
-          <ActionPanel>
-            <Action.OpenInBrowser
-              title="Configure API Token"
-              url="raycast://extensions/codegen/codegen"
-              icon={Icon.Gear}
-            />
-          </ActionPanel>
-        }
-      >
-        <Form.Description
-          title=""
-          text="I need your API token to get started. Once you add it, we can build some amazing things together!"
-        />
-        <Form.Description
-          title=""
-          text={validationError}
-        />
-      </Form>
-    );
+    return <WelcomeScreen commandName="Create Agent Run" />;
   }
 
   return (
