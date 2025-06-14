@@ -4,7 +4,7 @@
   "title": "Codegen",
   "description": "Create and manage AI agent runs directly from Raycast. Interact with the Codegen API to launch agents, monitor their progress, and view results.",
   "icon": "icon.png",
-  "author": "codegen",
+  "author": "kopekC",
   "categories": [
     "Developer Tools",
     "Productivity"
@@ -93,7 +93,7 @@
     "dotenv": "^16.5.0"
   },
   "devDependencies": {
-    "@raycast/eslint-config": "^2.0.0",
+    "@raycast/eslint-config": "^1.0.11",
     "@types/node": "20.19.0",
     "@types/react": "^19.0.10",
     "eslint": "^8.57.0",
