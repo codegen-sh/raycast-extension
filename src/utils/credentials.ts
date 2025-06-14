@@ -32,7 +32,7 @@ export function getCredentials(): Preferences {
   // Check for environment variable first, then preferences, then default
   const apiBaseUrl = process.env.RAYCAST_CODEGEN_API_BASE_URL || 
                      preferences.apiBaseUrl || 
-                     "https://codegen-sh-staging--rest-api.modal.run";
+                     "https://api.codegen.com";
 
   console.log("🔧 API Base URL configuration:", {
     fromEnv: !!process.env.RAYCAST_CODEGEN_API_BASE_URL,
