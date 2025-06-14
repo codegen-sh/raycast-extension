@@ -73,11 +73,12 @@ export function useCachedAgentRuns(): UseCachedAgentRunsResult {
       return;
     }
 
-    console.log(`Loading cached data for organization ${organizationId}`);
+    console.log(`📖 Loading cached data for organization ${organizationId}`);
     try {
       const cachedRuns = await cache.getAgentRuns(organizationId);
       console.log(
-        `Loaded ${cachedRuns.length} cached runs for org ${organizationId}`,
+        `📊 Loaded ${cachedRuns.length} cached runs for org ${organizationId}:`,
+        cachedRuns.map(r => r.id)
       );
       setAgentRuns(cachedRuns);
 
@@ -142,9 +143,10 @@ export function useCachedAgentRuns(): UseCachedAgentRunsResult {
 
   // Refresh function (load cache + sync)
   const refresh = useCallback(async () => {
+    console.log(`🔄 refresh() called for organization ${organizationId}`);
     await loadCachedData();
     await syncWithAPI(true);
-  }, [loadCachedData, syncWithAPI]);
+  }, [loadCachedData, syncWithAPI, organizationId]);
 
   // Update filters
   const updateFilters = useCallback((newFilters: AgentRunFilters) => {

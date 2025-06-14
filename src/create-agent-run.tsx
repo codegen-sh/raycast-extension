@@ -14,7 +14,11 @@ import {
 import { getAPIClient } from "./api/client";
 import { getAgentRunCache } from "./storage/agentRunCache";
 import { validateCredentials, hasCredentials } from "./utils/credentials";
-import { OrganizationResponse } from "./api/types";
+// Using simplified organization type for the form
+type BasicOrganization = {
+  id: number;
+  name: string;
+};
 import { useCachedAgentRuns } from "./hooks/useCachedAgentRuns";
 import { getBackgroundMonitoringService } from "./utils/backgroundMonitoring";
 import { useCurrentUser } from "./hooks/useCurrentUser";
@@ -32,9 +36,7 @@ interface Preferences {
 export default function CreateAgentRun() {
   const { pop } = useNavigation();
   const [isLoading, setIsLoading] = useState(false);
-  const [organizations, setOrganizations] = useState<OrganizationResponse[]>(
-    [],
-  );
+  const [organizations, setOrganizations] = useState<BasicOrganization[]>([]);
   const [isLoadingOrgs, setIsLoadingOrgs] = useState(true);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [defaultOrgId, setDefaultOrgId] = useState<string | null>(null);
@@ -85,10 +87,9 @@ export default function CreateAgentRun() {
         // Use cached default organization if available
         if (cachedDefaultOrg) {
           try {
-            const defaultOrg: OrganizationResponse =
-              JSON.parse(cachedDefaultOrg);
-            if (defaultOrg.id && defaultOrg.name && defaultOrg.settings) {
-              setOrganizations([defaultOrg]);
+            const defaultOrg = JSON.parse(cachedDefaultOrg);
+            if (defaultOrg.id && defaultOrg.name) {
+              setOrganizations([{ id: defaultOrg.id, name: defaultOrg.name }]);
             }
           } catch (parseError) {
             console.log(
@@ -98,12 +99,21 @@ export default function CreateAgentRun() {
           }
         }
 
-        // Just validate credentials without fetching orgs (we have them cached)
+        // Validate credentials and get organizations
         const validation = await validateCredentials();
         if (!validation.isValid) {
           setValidationError(validation.error || "Invalid credentials");
           setIsLoadingOrgs(false);
           return;
+        }
+
+        // Use organizations from validation result
+        if (validation.organizations && validation.organizations.length > 0) {
+          setOrganizations(validation.organizations);
+          console.log(
+            "✅ Loaded organizations from validation:",
+            validation.organizations.length,
+          );
         }
 
         // TODO: Re-enable user profile fetching later
@@ -178,9 +188,11 @@ export default function CreateAgentRun() {
       });
 
       // Cache the new agent run
+      console.log(`🎯 Caching agent run ${agentRun.id} for org ${organizationId}`);
       await cache.updateAgentRun(organizationId, agentRun);
 
       // Add to tracking for notifications
+      console.log(`📍 Adding agent run ${agentRun.id} to tracking`);
       await cache.addToTracking(organizationId, agentRun);
 
       // Start background monitoring if not already running
@@ -189,7 +201,13 @@ export default function CreateAgentRun() {
       }
 
       // Refresh the list view to show the new run
+      console.log(`🔄 Calling refresh() to update list view`);
       await refresh();
+      
+      // Also manually reload cache to ensure it's updated
+      console.log(`🔄 Double-checking cache by manually reloading`);
+      const updatedRuns = await cache.getAgentRuns(organizationId);
+      console.log(`📊 Cache now has ${updatedRuns.length} runs for org ${organizationId}:`, updatedRuns.map(r => r.id));
 
       await showToast({
         style: Toast.Style.Success,
