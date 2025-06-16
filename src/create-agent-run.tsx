@@ -188,7 +188,9 @@ export default function CreateAgentRun() {
       });
 
       // Cache the new agent run
-      console.log(`🎯 Caching agent run ${agentRun.id} for org ${organizationId}`);
+      console.log(
+        `🎯 Caching agent run ${agentRun.id} for org ${organizationId}`,
+      );
       await cache.updateAgentRun(organizationId, agentRun);
 
       // Add to tracking for notifications
@@ -203,11 +205,14 @@ export default function CreateAgentRun() {
       // Refresh the list view to show the new run
       console.log(`🔄 Calling refresh() to update list view`);
       await refresh();
-      
+
       // Also manually reload cache to ensure it's updated
       console.log(`🔄 Double-checking cache by manually reloading`);
       const updatedRuns = await cache.getAgentRuns(organizationId);
-      console.log(`📊 Cache now has ${updatedRuns.length} runs for org ${organizationId}:`, updatedRuns.map(r => r.id));
+      console.log(
+        `📊 Cache now has ${updatedRuns.length} runs for org ${organizationId}:`,
+        updatedRuns.map((r) => r.id),
+      );
 
       await showToast({
         style: Toast.Style.Success,

@@ -78,7 +78,7 @@ export function useCachedAgentRuns(): UseCachedAgentRunsResult {
       const cachedRuns = await cache.getAgentRuns(organizationId);
       console.log(
         `📊 Loaded ${cachedRuns.length} cached runs for org ${organizationId}:`,
-        cachedRuns.map(r => r.id)
+        cachedRuns.map((r) => r.id),
       );
       setAgentRuns(cachedRuns);
 
